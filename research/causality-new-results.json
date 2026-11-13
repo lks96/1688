@@ -1,0 +1,38 @@
+{
+  "modelVersion": "2026-10-21-rotation-special-v3",
+  "seedSha256": "026762fa1fe84b5010e05f1b462c0a3fc3d5a65a39955df694f4066aac4cf750",
+  "modelSha256": "5e251b43b054a9d0f58ab81b0df89f3ea987b985b9190299941469d395422fc4",
+  "range": {
+    "from": "2026-10-17",
+    "to": "2026-10-21",
+    "draws": 5
+  },
+  "analysisRange": {
+    "from": "2026-01-01",
+    "to": "2026-10-21",
+    "draws": 294
+  },
+  "methods": [
+    "rotation",
+    "special"
+  ],
+  "candidateChecks": 20,
+  "scoreVectorChecks": 20,
+  "allPassed": true,
+  "changedHitCounts": 3,
+  "independentValidation": false,
+  "preDrawArchive": false,
+  "limitations": [
+    "Historical inputs contain final published records, not archived point-in-time source responses.",
+    "Algorithm design has reused 2026 history; these are exploratory simulations, not an untouched holdout or predictions recorded before the draw."
+  ],
+  "checks": [
+    "Every target rebuilt with its outcome and all later outcomes physically removed",
+    "Every target rebuilt with its outcome and all later outcomes replaced, including inferred mapping",
+    "Both methods preserve candidates AND all 12 scores",
+    "Training cutoffs precede targets",
+    "Observed-history perturbation changes scores",
+    "Forecast entry point rejects current/future inputs",
+    "Lunar-calendar rollover and mapping checked"
+  ]
+}

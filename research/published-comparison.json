@@ -1,0 +1,95 @@
+{
+  "modelVersion": "2026-10-17-causal-v2",
+  "status": "exploratory_reused_history",
+  "range": {
+    "from": "2026-01-01",
+    "to": "2026-10-15",
+    "draws": 288
+  },
+  "randomReference": {
+    "draws": 288,
+    "brier": 0.24865704833347818,
+    "meanHits": 1.5274621212121213,
+    "anyHit": 0.910984848484848,
+    "allHit": 0.101767676767677
+  },
+  "methods": {
+    "rotation": {
+      "name": "3 / 7 / 14期走势＋轮换约束",
+      "candidates": [
+        "虎",
+        "马",
+        "蛇"
+      ],
+      "metric": {
+        "draws": 288,
+        "brier": 0.25294507438315494,
+        "meanHits": 1.5173611111111112,
+        "anyHit": 0.9236111111111112,
+        "allHit": 0.11805555555555555
+      },
+      "recentMeanHits": 1.6,
+      "setChangeRate": 1
+    },
+    "decay90": {
+      "name": "90期半衰期加权",
+      "candidates": [
+        "马",
+        "虎",
+        "鸡"
+      ],
+      "metric": {
+        "draws": 288,
+        "brier": 0.2491585469745964,
+        "meanHits": 1.5138888888888888,
+        "anyHit": 0.9027777777777778,
+        "allHit": 0.10069444444444445
+      },
+      "recentMeanHits": 1.6666666666666667,
+      "setChangeRate": 0.17770034843205576
+    },
+    "multiWindow": {
+      "name": "7 / 14 / 30期加权",
+      "candidates": [
+        "猪",
+        "马",
+        "虎"
+      ],
+      "metric": {
+        "draws": 288,
+        "brier": 0.25120973314391476,
+        "meanHits": 1.5138888888888888,
+        "anyHit": 0.9236111111111112,
+        "allHit": 0.09722222222222222
+      },
+      "recentMeanHits": 1.5666666666666667,
+      "setChangeRate": 0.5121951219512195
+    },
+    "adaptive": {
+      "name": "按过去60期表现调权",
+      "candidates": [
+        "猪",
+        "虎",
+        "马"
+      ],
+      "metric": {
+        "draws": 288,
+        "brier": 0.25096301499395834,
+        "meanHits": 1.5,
+        "anyHit": 0.9027777777777778,
+        "allHit": 0.09722222222222222
+      },
+      "recentMeanHits": 1.5666666666666667,
+      "setChangeRate": 0.5958188153310104
+    }
+  },
+  "checks": [
+    "legacy outputs retained",
+    "all 288 rows available",
+    "metrics recomputed from full detail",
+    "duplicate stability",
+    "repeated zodiac scored once",
+    "7 chronological cutoffs including lunar rollover",
+    "adaptive weight normalization"
+  ]
+}

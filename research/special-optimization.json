@@ -1,0 +1,72 @@
+{
+  "version": "2026-10-24-special-adaptive-v4",
+  "range": {
+    "from": "2026-01-01",
+    "to": "2026-10-23",
+    "draws": 296
+  },
+  "parametersFixedBeforeComparison": true,
+  "rotationUnchanged": true,
+  "old": {
+    "metric": {
+      "draws": 296,
+      "brier": 0.0768467016809977,
+      "meanHits": 0.20270270270270271,
+      "anyHit": 0.20270270270270271,
+      "allHit": 0
+    },
+    "ledger": {
+      "draws": 296,
+      "from": "2026-01-01",
+      "to": "2026-10-23",
+      "stakeCents": 3820000,
+      "returnCents": 2820000,
+      "profitCents": -1000000,
+      "roi": -0.2617801047120419,
+      "hits": 60,
+      "numberBets": 3820
+    }
+  },
+  "new": {
+    "metric": {
+      "draws": 296,
+      "brier": 0.07636155837823702,
+      "meanHits": 0.23648648648648649,
+      "anyHit": 0.23648648648648649,
+      "allHit": 0
+    },
+    "ledger": {
+      "draws": 296,
+      "from": "2026-01-01",
+      "to": "2026-10-23",
+      "stakeCents": 3848000,
+      "returnCents": 3290000,
+      "profitCents": -558000,
+      "roi": -0.145010395010395,
+      "hits": 70,
+      "numberBets": 3848
+    },
+    "randomCoverageMatchedHitRate": 0.26530612244897755
+  },
+  "limitations": [
+    "Exploratory reused history; not independent validation or pre-draw archived predictions."
+  ],
+  "baselineSourceCommit": "afe0ec1454362c3523f713f5ca991576ab6b1947",
+  "seedSha256": "601fc38cd4c98cb08306fb29842470ab89bbc3e2f5750583473334a5aaf8ec9f",
+  "method": {
+    "windows": [
+      14,
+      45,
+      120
+    ],
+    "priorStrengths": [
+      49,
+      98,
+      196
+    ],
+    "fixedBaselineShare": 0.35,
+    "learningRate": 0.5,
+    "evidenceDecay": 0.98,
+    "objective": "past-outcome log score; no selection by retrospective profit"
+  }
+}

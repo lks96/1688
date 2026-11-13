@@ -1,0 +1,38 @@
+{
+  "modelVersion": "2026-10-24-special-adaptive-v4",
+  "seedSha256": "601fc38cd4c98cb08306fb29842470ab89bbc3e2f5750583473334a5aaf8ec9f",
+  "modelSha256": "968979e65002348529f83a36c585953756a888e4b95afc4fe426229ac6cdab51",
+  "range": {
+    "from": "2026-01-01",
+    "to": "2026-10-23",
+    "draws": 296
+  },
+  "analysisRange": {
+    "from": "2026-01-01",
+    "to": "2026-10-23",
+    "draws": 296
+  },
+  "methods": [
+    "rotation",
+    "special"
+  ],
+  "candidateChecks": 1184,
+  "scoreVectorChecks": 1184,
+  "allPassed": true,
+  "changedHitCounts": 314,
+  "independentValidation": false,
+  "preDrawArchive": false,
+  "limitations": [
+    "Historical inputs contain final published records, not archived point-in-time source responses.",
+    "Algorithm design has reused 2026 history; these are exploratory simulations, not an untouched holdout or predictions recorded before the draw."
+  ],
+  "checks": [
+    "Every target rebuilt with its outcome and all later outcomes physically removed",
+    "Every target rebuilt with its outcome and all later outcomes replaced, including inferred mapping",
+    "Both methods preserve candidates AND all 12 scores",
+    "Training cutoffs precede targets",
+    "Observed-history perturbation changes scores",
+    "Forecast entry point rejects current/future inputs",
+    "Lunar-calendar rollover and mapping checked"
+  ]
+}

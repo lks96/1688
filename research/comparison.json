@@ -1,0 +1,301 @@
+{
+  "status": "exploratory_reused_history",
+  "note": "Python exploratory rankings use NumPy rounding; published-comparison.json uses the retained JavaScript tie rule and is authoritative for the Site. No candidate showed a reliable gain; no hyperparameter search was performed. Logistic and short-window trials are retained here including their poor results.",
+  "futureVerificationFrom": "2026-10-16",
+  "definitions": [
+    "baseline",
+    "legacy90",
+    "short7",
+    "short14",
+    "short30",
+    "multiWindow",
+    "transition30",
+    "transition90",
+    "pooledLogistic",
+    "adaptive"
+  ],
+  "development": {
+    "baseline": {
+      "draws": 275,
+      "meanHits": 1.4327272727272726,
+      "allHit": 0.08,
+      "anyHit": 0.8654545454545455,
+      "brier": 0.2479424094794822,
+      "setChangeRate": 0.0,
+      "current": [
+        "马",
+        "鼠",
+        "牛"
+      ],
+      "last30MeanHits": 1.3
+    },
+    "legacy90": {
+      "draws": 275,
+      "meanHits": 1.450909090909091,
+      "allHit": 0.05090909090909091,
+      "anyHit": 0.9054545454545454,
+      "brier": 0.24799035439576608,
+      "setChangeRate": 0.1897810218978102,
+      "current": [
+        "马",
+        "虎",
+        "鸡"
+      ],
+      "last30MeanHits": 1.4666666666666666
+    },
+    "short7": {
+      "draws": 275,
+      "meanHits": 1.4,
+      "allHit": 0.07272727272727272,
+      "anyHit": 0.8581818181818182,
+      "brier": 0.25068703975755485,
+      "setChangeRate": 0.7116788321167883,
+      "current": [
+        "猪",
+        "马",
+        "虎"
+      ],
+      "last30MeanHits": 1.5
+    },
+    "short14": {
+      "draws": 275,
+      "meanHits": 1.3709090909090909,
+      "allHit": 0.06909090909090909,
+      "anyHit": 0.8836363636363637,
+      "brier": 0.25128898107277425,
+      "setChangeRate": 0.5547445255474452,
+      "current": [
+        "虎",
+        "猪",
+        "马"
+      ],
+      "last30MeanHits": 1.3333333333333333
+    },
+    "short30": {
+      "draws": 275,
+      "meanHits": 1.461818181818182,
+      "allHit": 0.08363636363636363,
+      "anyHit": 0.8981818181818182,
+      "brier": 0.24946144978281326,
+      "setChangeRate": 0.3613138686131387,
+      "current": [
+        "猪",
+        "马",
+        "虎"
+      ],
+      "last30MeanHits": 1.5
+    },
+    "multiWindow": {
+      "draws": 275,
+      "meanHits": 1.4072727272727272,
+      "allHit": 0.08,
+      "anyHit": 0.8981818181818182,
+      "brier": 0.24944772481427094,
+      "setChangeRate": 0.5583941605839416,
+      "current": [
+        "猪",
+        "马",
+        "虎"
+      ],
+      "last30MeanHits": 1.5333333333333334
+    },
+    "transition30": {
+      "draws": 275,
+      "meanHits": 1.4290909090909092,
+      "allHit": 0.08363636363636363,
+      "anyHit": 0.9018181818181819,
+      "brier": 0.2502707547685489,
+      "setChangeRate": 0.8686131386861314,
+      "current": [
+        "虎",
+        "蛇",
+        "牛"
+      ],
+      "last30MeanHits": 1.6666666666666667
+    },
+    "transition90": {
+      "draws": 275,
+      "meanHits": 1.4145454545454546,
+      "allHit": 0.06181818181818182,
+      "anyHit": 0.8836363636363637,
+      "brier": 0.2500598899340321,
+      "setChangeRate": 0.8832116788321168,
+      "current": [
+        "虎",
+        "马",
+        "鸡"
+      ],
+      "last30MeanHits": 1.5
+    },
+    "pooledLogistic": {
+      "draws": 275,
+      "meanHits": 1.5163636363636364,
+      "allHit": 0.09454545454545454,
+      "anyHit": 0.9090909090909091,
+      "brier": 0.24736267214406243,
+      "setChangeRate": 0.9051094890510949,
+      "current": [
+        "马",
+        "蛇",
+        "鼠"
+      ],
+      "last30MeanHits": 1.5333333333333334
+    },
+    "adaptive": {
+      "draws": 275,
+      "meanHits": 1.4036363636363636,
+      "allHit": 0.07636363636363637,
+      "anyHit": 0.88,
+      "brier": 0.24930390538163355,
+      "setChangeRate": 0.6934306569343066,
+      "current": [
+        "猪",
+        "虎",
+        "马"
+      ],
+      "last30MeanHits": 1.5666666666666667
+    }
+  },
+  "historical2026": {
+    "baseline": {
+      "draws": 288,
+      "meanHits": 1.5347222222222223,
+      "allHit": 0.09722222222222222,
+      "anyHit": 0.9270833333333334,
+      "brier": 0.24865704833347893,
+      "setChangeRate": 0.003484320557491289,
+      "current": [
+        "马",
+        "鼠",
+        "牛"
+      ],
+      "last30MeanHits": 1.5333333333333334
+    },
+    "legacy90": {
+      "draws": 288,
+      "meanHits": 1.5138888888888888,
+      "allHit": 0.10069444444444445,
+      "anyHit": 0.9027777777777778,
+      "brier": 0.24915854697459638,
+      "setChangeRate": 0.17770034843205576,
+      "current": [
+        "马",
+        "虎",
+        "鸡"
+      ],
+      "last30MeanHits": 1.6666666666666667
+    },
+    "short7": {
+      "draws": 288,
+      "meanHits": 1.4652777777777777,
+      "allHit": 0.09722222222222222,
+      "anyHit": 0.90625,
+      "brier": 0.2545922962077984,
+      "setChangeRate": 0.6898954703832753,
+      "current": [
+        "猪",
+        "马",
+        "虎"
+      ],
+      "last30MeanHits": 1.5666666666666667
+    },
+    "short14": {
+      "draws": 288,
+      "meanHits": 1.5208333333333333,
+      "allHit": 0.09722222222222222,
+      "anyHit": 0.9444444444444444,
+      "brier": 0.25155656658774883,
+      "setChangeRate": 0.5017421602787456,
+      "current": [
+        "虎",
+        "猪",
+        "马"
+      ],
+      "last30MeanHits": 1.5666666666666667
+    },
+    "short30": {
+      "draws": 288,
+      "meanHits": 1.4791666666666667,
+      "allHit": 0.09722222222222222,
+      "anyHit": 0.9027777777777778,
+      "brier": 0.25090759462826295,
+      "setChangeRate": 0.3902439024390244,
+      "current": [
+        "猪",
+        "马",
+        "虎"
+      ],
+      "last30MeanHits": 1.6
+    },
+    "multiWindow": {
+      "draws": 288,
+      "meanHits": 1.5138888888888888,
+      "allHit": 0.09722222222222222,
+      "anyHit": 0.9236111111111112,
+      "brier": 0.25120973314391465,
+      "setChangeRate": 0.5121951219512195,
+      "current": [
+        "猪",
+        "马",
+        "虎"
+      ],
+      "last30MeanHits": 1.5666666666666667
+    },
+    "transition30": {
+      "draws": 288,
+      "meanHits": 1.4965277777777777,
+      "allHit": 0.1076388888888889,
+      "anyHit": 0.8958333333333334,
+      "brier": 0.25187960797261544,
+      "setChangeRate": 0.8954703832752613,
+      "current": [
+        "虎",
+        "蛇",
+        "牛"
+      ],
+      "last30MeanHits": 1.6333333333333333
+    },
+    "transition90": {
+      "draws": 288,
+      "meanHits": 1.4652777777777777,
+      "allHit": 0.09027777777777778,
+      "anyHit": 0.8784722222222222,
+      "brier": 0.2518255897541871,
+      "setChangeRate": 0.8954703832752613,
+      "current": [
+        "虎",
+        "马",
+        "鸡"
+      ],
+      "last30MeanHits": 1.5333333333333334
+    },
+    "pooledLogistic": {
+      "draws": 288,
+      "meanHits": 1.4930555555555556,
+      "allHit": 0.10416666666666667,
+      "anyHit": 0.8854166666666666,
+      "brier": 0.24891781792018766,
+      "setChangeRate": 0.9337979094076655,
+      "current": [
+        "马",
+        "蛇",
+        "鼠"
+      ],
+      "last30MeanHits": 1.5666666666666667
+    },
+    "adaptive": {
+      "draws": 288,
+      "meanHits": 1.5,
+      "allHit": 0.09722222222222222,
+      "anyHit": 0.9027777777777778,
+      "brier": 0.25096301499395834,
+      "setChangeRate": 0.5958188153310104,
+      "current": [
+        "猪",
+        "虎",
+        "马"
+      ],
+      "last30MeanHits": 1.5666666666666667
+    }
+  }
+}
