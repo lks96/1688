@@ -2,12 +2,15 @@
 import {ResponsiveContainer,LineChart,Line,XAxis,YAxis,CartesianGrid,Tooltip,ReferenceLine} from 'recharts';
 import type {OmissionScope} from '@/lib/omissions';
 import type {OmissionPerformance,SevenNumberPerformance} from '@/lib/omission-performance';
+import type {OmissionBacktest} from '@/lib/omission-backtest';
+import RankFrequencyBacktest from '@/components/rank-frequency-backtest';
 const pct=(v:number)=>(v*100).toFixed(2)+'%';
 const unit=(v:number|null)=>v===null?'—':Number.isInteger(v)?String(v):v.toFixed(1);
-export default function OmissionPerformancePanel({statistics:s,target='special'}:{statistics:OmissionPerformance|SevenNumberPerformance;target?:OmissionScope}){
+export default function OmissionPerformancePanel({statistics:s,target='special',currentRanking,backtestRows}:{statistics:OmissionPerformance|SevenNumberPerformance;target?:OmissionScope;currentRanking?:number[];backtestRows?:OmissionBacktest['rows']}){
  const all=target==='all',seven='meanHits' in s?s:null,label=all?'全部7码':'特码';
  const chart=s.ranks.map(r=>({...r,percent:r.rate*100}));
  const topFrequencyRanks=[...s.ranks].sort((a,b)=>b.count-a.count||a.rank-b.rank).slice(0,10);
+ const currentNumbers=new Map((currentRanking??[]).map((number,index)=>[index+1,number]));
  const top5=s.coverage.find(r=>r.top===5)!,top20=s.coverage.find(r=>r.top===20)!;
  return <div className="omission-performance">
   <div className="chart-section-title"><h3>前十号码 · {label}命中统计</h3><span>历史{s.draws}期</span></div>
@@ -22,14 +25,13 @@ export default function OmissionPerformancePanel({statistics:s,target='special'}
   <div className="rank-frequency-scroll"><div className="rank-frequency-chart" role="img" aria-label={`${label}第1至49名历史频率折线图，统计${s.rankedDraws}个开奖号`}><ResponsiveContainer width="100%" height="100%"><LineChart data={chart} margin={{top:15,right:15,left:0,bottom:5}}><CartesianGrid vertical={false} stroke="#e8ede2"/><XAxis dataKey="rank" type="number" domain={[1,49]} ticks={[1,5,10,15,20,25,30,35,40,45,49]} tick={{fontSize:11,fill:'#7c8d72'}} tickFormatter={v=>`${v}名`} axisLine={false} tickLine={false}/><YAxis tick={{fontSize:11,fill:'#7c8d72'}} tickFormatter={v=>`${v}%`} width={48} axisLine={false} tickLine={false}/><ReferenceLine y={100/49} stroke="#b8964b" strokeDasharray="4 4"/><Tooltip content={({active,payload})=>{const r=payload?.[0]?.payload;return active&&r?<div className="rank-frequency-tooltip"><strong>第{r.rank}名</strong><span>{r.count}次 / {s.rankedDraws}个开奖号</span><span>历史频率 {r.percent.toFixed(2)}%</span></div>:null;}}/><Line dataKey="percent" type="linear" stroke="#527945" strokeWidth={2} dot={{r:3}} activeDot={{r:6}} isAnimationActive={false}/></LineChart></ResponsiveContainer></div></div>
   <div className="chart-section-title"><h3>出现频率最高的评分名次</h3><span>前10名次</span></div>
   <p className="stats-small-note">按{label}在第1—49名中的历史出现次数从高到低排列；次数相同按评分名次从前到后排列。</p>
-  <div className="rank-range-table rank-frequency-top-table"><table><thead><tr><th>频率顺序</th><th>评分名次</th><th>出现次数</th><th>历史频率</th></tr></thead><tbody>{topFrequencyRanks.map((r,i)=><tr key={r.rank}><td>第{i+1}位</td><td>第{r.rank}名</td><td>{r.count}次</td><td>{pct(r.rate)}</td></tr>)}</tbody></table></div>
+  <div className="rank-range-table rank-frequency-top-table"><table><thead><tr><th>频率顺序</th><th>本期号码</th><th>评分名次</th><th>出现次数</th><th>历史频率</th></tr></thead><tbody>{topFrequencyRanks.map((r,i)=><tr key={r.rank}><td>第{i+1}位</td><td>{currentNumbers.has(r.rank)?String(currentNumbers.get(r.rank)).padStart(2,'0'):'—'}</td><td>第{r.rank}名</td><td>{r.count}次</td><td>{pct(r.rate)}</td></tr>)}</tbody></table></div>
   <p className="stats-small-note">逐期检查开奖结果是否落在这10个评分名次中；平特码按当期7个号码里至少1个落入计为出现。</p>
   <div className="rank-current"><span>当前连续未出现 <strong>{s.topFrequencyRankStreaks.currentAbsentPeriods}期</strong></span><span>历史最长未出现 <strong>{s.topFrequencyRankStreaks.maxAbsentPeriods}期</strong></span><span>最多连续出现 <strong>{s.topFrequencyRankStreaks.maxConsecutiveAppearancePeriods}期</strong></span></div>
   <div className="rank-current"><span>平均不出多少期后出现 <strong>{unit(s.topFrequencyRankStreaks.averageAbsentBetweenAppearances)}{s.topFrequencyRankStreaks.averageAbsentBetweenAppearances===null?'':'期'}</strong></span><span>历史中位不出期数 <strong>{unit(s.topFrequencyRankStreaks.medianAbsentBetweenAppearances)}{s.topFrequencyRankStreaks.medianAbsentBetweenAppearances===null?'':'期'}</strong></span></div>
   <p className="stats-small-note">平均值和中位数按两次出现之间完全未出现的期数计算，只统计已经结束的间隔；连续期出现记为0期未出现。</p>
+  {backtestRows&&<RankFrequencyBacktest rows={backtestRows} selectedRanks={topFrequencyRanks.map(r=>r.rank)}/>}
   <div className="omission-hit-legend"><span className="special-key">历史频率</span><span className="baseline-key">单名次均匀基准 {pct(1/49)}</span></div>
-  <div className="rank-best"><span>出现最多的区间</span><strong>{s.bestRanges.length?s.bestRanges.map(r=>r.label).join('、'):'暂无记录'}</strong><small>{s.bestRanges[0]?`${s.bestRanges[0].count}次 · ${pct(s.bestRanges[0].rate)}`:''}</small></div>
-  <div className="rank-range-table"><table><thead><tr><th>当期排名区间</th><th>次数</th><th>历史频率</th><th>均匀基准</th></tr></thead><tbody>{s.ranges.map(r=><tr key={r.start}><td>{r.label}</td><td>{r.count}</td><td>{pct(r.rate)}</td><td>{pct(r.baseline)}</td></tr>)}</tbody></table></div>
   <div className="rank-current"><span>前5名覆盖率 <strong>{pct(top5.rate)}</strong></span><span>前20名覆盖率 <strong>{pct(top20.rate)}</strong></span></div>
   <details className="rank-detail"><summary>查看第1—49名的次数与频率</summary><div className="rank-exact-list">{s.ranks.map(r=><div key={r.rank}><strong>第{r.rank}名</strong><span>{r.count}次</span><span>{pct(r.rate)}</span></div>)}</div></details>
  </div>;

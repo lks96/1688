@@ -41,3 +41,19 @@ export function backtestOmissionTop10(rows:Draw[],offsetForDate:(date:string)=>n
   return settleOmissionTop10(bets);
 }
 export type OmissionBacktest=ReturnType<typeof backtestOmissionTop10>;
+
+export function backtestFrequentRankNumbers(input:OmissionBet[],selectedRanks:number[]){
+ if(!selectedRanks.length||selectedRanks.some(rank=>!Number.isInteger(rank)||rank<1||rank>49))throw new Error('频率名次必须是1至49名');
+ const chronological=[...input].sort((a,b)=>a.time.localeCompare(b.time)||a.issue.localeCompare(b.issue));
+ let stakeCents=0,returnCents=0,hits=0,betDraws=0,cumulativeProfitCents=0;
+ const rows=chronological.map((row,index)=>{
+  if(!row.ranking||row.ranking.length!==49)throw new Error(`${row.issue}期缺少49码完整评分排序`);
+  const candidates=selectedRanks.map(rank=>({rank,number:row.ranking![rank-1]}));
+  const bought=index%2===0,hitNumbers=bought?candidates.filter(candidate=>candidate.number===row.specialNumber):[];
+  const rowStakeCents=bought?candidates.length*OMISSION_TOP10_RULES.stakePerNumber*100:0,rowReturnCents=bought?hitNumbers.length*OMISSION_TOP10_RULES.stakePerNumber*OMISSION_TOP10_RULES.multiplier*100:0,rowProfitCents=rowReturnCents-rowStakeCents;
+  stakeCents+=rowStakeCents;returnCents+=rowReturnCents;hits+=Number(hitNumbers.length>0);betDraws+=Number(bought);cumulativeProfitCents+=rowProfitCents;
+  return {...row,candidates,bought,hitNumbers:hitNumbers.map(candidate=>candidate.number),hit:hitNumbers.length>0,stakeCents:rowStakeCents,returnCents:rowReturnCents,profitCents:rowProfitCents,cumulativeProfitCents};
+ });
+ const summary={draws:rows.length,betDraws,hits,stakeCents,returnCents,profitCents:returnCents-stakeCents,roi:stakeCents?(returnCents-stakeCents)/stakeCents:0,from:rows[0]?.time.slice(0,10)??'',to:rows.at(-1)?.time.slice(0,10)??''};
+ return {summary,rows:rows.reverse()};
+}

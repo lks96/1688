@@ -10,14 +10,14 @@ const signed=(cents:number)=>(cents>0?'+':cents<0?'−':'')+money(Math.abs(cents
 const tone=(cents:number)=>cents>0?'profit-gain':cents<0?'profit-loss':'profit-even';
 const num=(n:number)=>String(n).padStart(2,'0');
 
-export default function OmissionTop10Backtest({backtest:b,scope='special'}:{backtest:OmissionBacktest;scope?:OmissionScope}){
+export default function OmissionTop10Backtest({backtest:b,scope='special',currentRanking}:{backtest:OmissionBacktest;scope?:OmissionScope;currentRanking:number[]}){
   const [limit,setLimit]=useState(10);
   const current=b,s=current.summary;
   return <section className="panel omission-top10-ledger" aria-label="遗漏号码前十独立盈亏">
     <div className="panel-heading"><div><h2>{scope==='all'?'全部7码评分 · 前十回测':'号码前十 · 回测盈亏'}</h2><p>{s.from} 至 {s.to} · {s.draws}期</p></div><span className="subtle-tag">特码独立账本</span></div>
     <div className="settlement-basis">每号10元 × 10个号 = 每期100元<span>47倍含本金 · 只核对最后一个号码</span></div>
     <div className="ledger-summary"><div><span>累计盈亏</span><strong className={tone(s.profitCents)}>{signed(s.profitCents)}<small>元</small></strong></div><dl><div><dt>累计投入</dt><dd>{money(s.stakeCents)}元</dd></div><div><dt>累计返还</dt><dd>{money(s.returnCents)}元</dd></div><div><dt>特码命中</dt><dd>{s.hits}/{s.betDraws}期</dd></div><div><dt>盈亏率</dt><dd className={tone(s.profitCents)}>{(s.roi*100).toFixed(2)}%</dd></div></dl></div>
-    <OmissionPerformancePanel statistics={scope==='all'?b.allPerformance:b.performance} target={scope}/>
+    <OmissionPerformancePanel statistics={scope==='all'?b.allPerformance:b.performance} target={scope} currentRanking={currentRanking} backtestRows={current.rows}/>
     <ProfitTrend rows={b.rows}/>
     <div className="omission-hit-legend"><span className="special-key">特码命中</span><span className="regular-key">平码命中（前6码）</span><span className="special-zodiac-key">特码同生肖</span><span className="regular-zodiac-key">平码同生肖</span></div>
     <details className="omission-ledger-details"><summary>逐期明细<small>共{s.draws}期 · 最新在前</small></summary>

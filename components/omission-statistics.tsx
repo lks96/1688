@@ -21,7 +21,7 @@ export default function OmissionStatisticsPage({statistics:s,modes}:{statistics:
   return <div className="omissions-page">
     <div className="ledger-tabs omission-scopes" role="group" aria-label="统计号码范围">{([{id:'special',label:'仅特码'},{id:'all',label:'平特码（全部7码）'}] as const).map(t=><button type="button" key={t.id} aria-pressed={scope===t.id} className={scope===t.id?'active':''} onClick={()=>selectScope(t.id)}>{t.label}</button>)}</div>
     <OmissionStrategyPanel key={scope} strategy={strategy}/>
-    <OmissionTop10Backtest key={scope} backtest={backtest} scope={scope}/>
+    <OmissionTop10Backtest key={scope} backtest={backtest} scope={scope} currentRanking={strategy.ranking.map(item=>item.number)}/>
 
     <section className="panel omission-overview"><div className="panel-heading"><div><h2>遗漏统计</h2><p>已统计{s.draws}期 · 截至{s.latestIssue}期</p></div><span className="subtle-tag">{s.to.slice(0,10)}</span></div><p className="omission-caption">本期出现记0期；未出现则累计。统计{ s.from.slice(0,10)}起的已载入记录。</p></section>
     <nav className="omission-categories" aria-label="统计分类">{groups.map(g=><button type="button" key={g.id} className={g.id===category?'active':''} aria-pressed={g.id===category} onClick={()=>setCategory(g.id)}>{g.label}</button>)}</nav>
