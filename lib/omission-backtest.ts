@@ -42,18 +42,28 @@ export function backtestOmissionTop10(rows:Draw[],offsetForDate:(date:string)=>n
 }
 export type OmissionBacktest=ReturnType<typeof backtestOmissionTop10>;
 
-export function backtestFrequentRankNumbers(input:OmissionBet[],selectedRanks:number[]){
+export type FrequentRankBetPlan='alternate-fixed'|'miss-streak-step'|'every-period-fixed';
+export function backtestFrequentRankNumbers(input:OmissionBet[],selectedRanks:number[],plan:FrequentRankBetPlan='alternate-fixed'){
  if(!selectedRanks.length||selectedRanks.some(rank=>!Number.isInteger(rank)||rank<1||rank>49))throw new Error('频率名次必须是1至49名');
  const chronological=[...input].sort((a,b)=>a.time.localeCompare(b.time)||a.issue.localeCompare(b.issue));
- let stakeCents=0,returnCents=0,hits=0,betDraws=0,cumulativeProfitCents=0;
+ const missStreaks=new Map(selectedRanks.map(rank=>[rank,0]));
+ let stakeCents=0,returnCents=0,hits=0,betDraws=0,betCount=0,cumulativeProfitCents=0;
  const rows=chronological.map((row,index)=>{
   if(!row.ranking||row.ranking.length!==49)throw new Error(`${row.issue}期缺少49码完整评分排序`);
-  const candidates=selectedRanks.map(rank=>({rank,number:row.ranking![rank-1]}));
-  const bought=index%2===0,hitNumbers=bought?candidates.filter(candidate=>candidate.number===row.specialNumber):[];
-  const rowStakeCents=bought?candidates.length*OMISSION_TOP10_RULES.stakePerNumber*100:0,rowReturnCents=bought?hitNumbers.length*OMISSION_TOP10_RULES.stakePerNumber*OMISSION_TOP10_RULES.multiplier*100:0,rowProfitCents=rowReturnCents-rowStakeCents;
-  stakeCents+=rowStakeCents;returnCents+=rowReturnCents;hits+=Number(hitNumbers.length>0);betDraws+=Number(bought);cumulativeProfitCents+=rowProfitCents;
-  return {...row,candidates,bought,hitNumbers:hitNumbers.map(candidate=>candidate.number),hit:hitNumbers.length>0,stakeCents:rowStakeCents,returnCents:rowReturnCents,profitCents:rowProfitCents,cumulativeProfitCents};
+  const candidates=selectedRanks.map(rank=>{
+   const misses=missStreaks.get(rank)??0;
+   const stakePerRank=plan==='every-period-fixed'?OMISSION_TOP10_RULES.stakePerNumber
+    :plan==='alternate-fixed'?(index%2===0?OMISSION_TOP10_RULES.stakePerNumber:0)
+    :index===0||misses===0||misses>=3?OMISSION_TOP10_RULES.stakePerNumber*Math.max(1,misses-2):0;
+   const number=row.ranking![rank-1],hit=number===row.specialNumber;
+   if(hit)missStreaks.set(rank,0);else missStreaks.set(rank,misses+1);
+   return {rank,number,stakeCents:stakePerRank*100,bought:stakePerRank>0,hit:stakePerRank>0&&hit};
+  });
+  const purchased=candidates.filter(candidate=>candidate.bought),hitCandidates=purchased.filter(candidate=>candidate.hit);
+  const rowStakeCents=purchased.reduce((sum,candidate)=>sum+candidate.stakeCents,0),rowReturnCents=hitCandidates.reduce((sum,candidate)=>sum+candidate.stakeCents*OMISSION_TOP10_RULES.multiplier,0),rowProfitCents=rowReturnCents-rowStakeCents;
+  stakeCents+=rowStakeCents;returnCents+=rowReturnCents;hits+=Number(hitCandidates.length>0);betDraws+=Number(purchased.length>0);betCount+=purchased.length;cumulativeProfitCents+=rowProfitCents;
+  return {...row,candidates,bought:purchased.length>0,hitNumbers:hitCandidates.map(candidate=>candidate.number),hit:hitCandidates.length>0,stakeCents:rowStakeCents,returnCents:rowReturnCents,profitCents:rowProfitCents,cumulativeProfitCents};
  });
- const summary={draws:rows.length,betDraws,hits,stakeCents,returnCents,profitCents:returnCents-stakeCents,roi:stakeCents?(returnCents-stakeCents)/stakeCents:0,from:rows[0]?.time.slice(0,10)??'',to:rows.at(-1)?.time.slice(0,10)??''};
- return {summary,rows:rows.reverse()};
+ const summary={draws:rows.length,betDraws,betCount,hits,stakeCents,returnCents,profitCents:returnCents-stakeCents,roi:stakeCents?(returnCents-stakeCents)/stakeCents:0,from:rows[0]?.time.slice(0,10)??'',to:rows.at(-1)?.time.slice(0,10)??''};
+ return {plan,summary,rows:rows.reverse()};
 }
