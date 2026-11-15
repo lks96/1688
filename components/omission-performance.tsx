@@ -23,6 +23,8 @@ export default function OmissionPerformancePanel({statistics:s,target='special'}
   <div className="chart-section-title"><h3>出现频率最高的评分名次</h3><span>前10名次</span></div>
   <p className="stats-small-note">按{label}在第1—49名中的历史出现次数从高到低排列；次数相同按评分名次从前到后排列。</p>
   <div className="rank-range-table rank-frequency-top-table"><table><thead><tr><th>频率顺序</th><th>评分名次</th><th>出现次数</th><th>历史频率</th></tr></thead><tbody>{topFrequencyRanks.map((r,i)=><tr key={r.rank}><td>第{i+1}位</td><td>第{r.rank}名</td><td>{r.count}次</td><td>{pct(r.rate)}</td></tr>)}</tbody></table></div>
+  <p className="stats-small-note">逐期检查开奖结果是否落在这10个评分名次中；平特码按当期7个号码里至少1个落入计为出现。</p>
+  <div className="rank-current"><span>当前连续未出现 <strong>{s.topFrequencyRankStreaks.currentAbsentPeriods}期</strong></span><span>历史最长未出现 <strong>{s.topFrequencyRankStreaks.maxAbsentPeriods}期</strong></span><span>最多连续出现 <strong>{s.topFrequencyRankStreaks.maxConsecutiveAppearancePeriods}期</strong></span></div>
   <div className="omission-hit-legend"><span className="special-key">历史频率</span><span className="baseline-key">单名次均匀基准 {pct(1/49)}</span></div>
   <div className="rank-best"><span>出现最多的区间</span><strong>{s.bestRanges.length?s.bestRanges.map(r=>r.label).join('、'):'暂无记录'}</strong><small>{s.bestRanges[0]?`${s.bestRanges[0].count}次 · ${pct(s.bestRanges[0].rate)}`:''}</small></div>
   <div className="rank-range-table"><table><thead><tr><th>当期排名区间</th><th>次数</th><th>历史频率</th><th>均匀基准</th></tr></thead><tbody>{s.ranges.map(r=><tr key={r.start}><td>{r.label}</td><td>{r.count}</td><td>{pct(r.rate)}</td><td>{pct(r.baseline)}</td></tr>)}</tbody></table></div>

@@ -11,11 +11,13 @@ export function summarizeOmissionPerformance(input:OmissionOutcome[]){
   else{losses++;wins=0;maxLosses=Math.max(maxLosses,losses);}
  }
  const rankStatistics=summarizeRanks(rows.flatMap(r=>r.specialRank===null?[]:[r.specialRank]));
+ const topRanks=topFrequencyRankNumbers(rankStatistics.ranks);
+ const topFrequencyRankStreaks=summarizeRankPresence(rows.map(r=>r.specialRank===null?[]:[r.specialRank]),topRanks);
  const hits=hitIndexes.length;
  return {draws:rows.length,hits,hitRate:rows.length?hits/rows.length:0,maxMisses:maxLosses,maxHits:maxWins,currentMisses:losses,currentHits:wins,
    medianHitInterval:median(intervals),medianMissesBetweenHits:median(intervals.map(v=>v-1)),completedIntervals:intervals.length,
    lastHit:lastHit>=0?{issue:rows[lastHit].issue,time:rows[lastHit].time}:null,
-   ...rankStatistics};
+   ...rankStatistics,topFrequencyRankStreaks};
 }
 export type OmissionPerformance=ReturnType<typeof summarizeOmissionPerformance>;
 
@@ -30,12 +32,24 @@ function summarizeRanks(values:number[]){
  const coverage=[5,10,15,20,30,40,49].map(top=>({top,count:ranks.slice(0,top).reduce((s,r)=>s+r.count,0),rate:ranked.length?ranks.slice(0,top).reduce((s,r)=>s+r.count,0)/ranked.length:0,baseline:top/49}));
  return {rankedDraws:ranked.length,ranks,ranges,coverage,bestRanges:ranked.length?ranges.filter(r=>r.count===Math.max(...ranges.map(v=>v.count))):[],bestRanks:ranked.length?ranks.filter(r=>r.count===Math.max(...ranks.map(v=>v.count))):[]};
 }
+function topFrequencyRankNumbers(ranks:{rank:number;count:number}[]){return [...ranks].sort((a,b)=>b.count-a.count||a.rank-b.rank).slice(0,10).map(r=>r.rank);}
+function summarizeRankPresence(periodRanks:number[][],selectedRanks:number[]){
+ const selected=new Set(selectedRanks);let currentAbsent=0,currentPresent=0,maxAbsent=0,maxPresent=0,appearancePeriods=0;
+ for(const ranks of periodRanks){
+  if(ranks.some(rank=>selected.has(rank))){appearancePeriods++;currentPresent++;currentAbsent=0;maxPresent=Math.max(maxPresent,currentPresent);}
+  else{currentAbsent++;currentPresent=0;maxAbsent=Math.max(maxAbsent,currentAbsent);}
+ }
+ return {periods:periodRanks.length,appearancePeriods,currentAbsentPeriods:currentAbsent,maxAbsentPeriods:maxAbsent,maxConsecutiveAppearancePeriods:maxPresent};
+}
 export function summarizeSevenNumberPerformance(rows:{issue:string;time:string;allHitCount:number;allNumberRanks:number[]}[]){
  const summary=summarizeOmissionPerformance(rows.map(r=>({...r,hit:r.allHitCount>0,specialRank:null})));
- const rankStatistics=summarizeRanks(rows.flatMap(r=>r.allNumberRanks));
+ const sortedRows=[...rows].sort((a,b)=>a.time.localeCompare(b.time));
+ const rankStatistics=summarizeRanks(sortedRows.flatMap(r=>r.allNumberRanks));
+ const topRanks=topFrequencyRankNumbers(rankStatistics.ranks);
+ const topFrequencyRankStreaks=summarizeRankPresence(sortedRows.map(r=>r.allNumberRanks),topRanks);
  const totalHits=rows.reduce((sum,r)=>sum+r.allHitCount,0);
  let noHitProbability=1;for(let i=0;i<7;i++)noHitProbability*=(39-i)/(49-i);
- return {...summary,...rankStatistics,totalHits,meanHits:rows.length?totalHits/rows.length:0,hitBaseline:1-noHitProbability,
+ return {...summary,...rankStatistics,topFrequencyRankStreaks,totalHits,meanHits:rows.length?totalHits/rows.length:0,hitBaseline:1-noHitProbability,
  hitDistribution:Array.from({length:8},(_,hits)=>({hits,count:rows.filter(r=>r.allHitCount===hits).length}))};
 }
 export type SevenNumberPerformance=ReturnType<typeof summarizeSevenNumberPerformance>;
