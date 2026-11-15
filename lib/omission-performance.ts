@@ -34,12 +34,14 @@ function summarizeRanks(values:number[]){
 }
 function topFrequencyRankNumbers(ranks:{rank:number;count:number}[]){return [...ranks].sort((a,b)=>b.count-a.count||a.rank-b.rank).slice(0,10).map(r=>r.rank);}
 function summarizeRankPresence(periodRanks:number[][],selectedRanks:number[]){
- const selected=new Set(selectedRanks);let currentAbsent=0,currentPresent=0,maxAbsent=0,maxPresent=0,appearancePeriods=0;
- for(const ranks of periodRanks){
-  if(ranks.some(rank=>selected.has(rank))){appearancePeriods++;currentPresent++;currentAbsent=0;maxPresent=Math.max(maxPresent,currentPresent);}
+ const selected=new Set(selectedRanks);let currentAbsent=0,currentPresent=0,maxAbsent=0,maxPresent=0,appearancePeriods=0,lastAppearance=-1;const absentGaps:number[]=[];
+ for(let i=0;i<periodRanks.length;i++){
+  const ranks=periodRanks[i];
+  if(ranks.some(rank=>selected.has(rank))){appearancePeriods++;currentPresent++;currentAbsent=0;maxPresent=Math.max(maxPresent,currentPresent);if(lastAppearance>=0)absentGaps.push(i-lastAppearance-1);lastAppearance=i;}
   else{currentAbsent++;currentPresent=0;maxAbsent=Math.max(maxAbsent,currentAbsent);}
  }
- return {periods:periodRanks.length,appearancePeriods,currentAbsentPeriods:currentAbsent,maxAbsentPeriods:maxAbsent,maxConsecutiveAppearancePeriods:maxPresent};
+ return {periods:periodRanks.length,appearancePeriods,currentAbsentPeriods:currentAbsent,maxAbsentPeriods:maxAbsent,maxConsecutiveAppearancePeriods:maxPresent,
+  averageAbsentBetweenAppearances:absentGaps.length?absentGaps.reduce((sum,gap)=>sum+gap,0)/absentGaps.length:null,medianAbsentBetweenAppearances:median(absentGaps),completedAppearanceIntervals:absentGaps.length};
 }
 export function summarizeSevenNumberPerformance(rows:{issue:string;time:string;allHitCount:number;allNumberRanks:number[]}[]){
  const summary=summarizeOmissionPerformance(rows.map(r=>({...r,hit:r.allHitCount>0,specialRank:null})));
