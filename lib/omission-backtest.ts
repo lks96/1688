@@ -3,7 +3,7 @@ import type {Draw} from './model';
 import {createOmissionTracker,type OmissionScope} from './omissions.ts';
 import {scoreOmissionStrategy} from './omission-strategy.ts';
 
-export type OmissionBet={issue:string;time:string;trainingThroughIssue:string;trainingThroughTime:string;numbers:number[];scores:number[];ranking?:number[];regularNumbers?:number[];specialNumber:number};
+export type OmissionBet={issue:string;time:string;trainingThroughIssue:string;trainingThroughTime:string;numbers:number[];scores:number[];ranking?:number[];frequencyRanks?:number[];regularNumbers?:number[];specialNumber:number};
 export const OMISSION_TOP10_RULES={stakePerNumber:10,multiplier:47} as const;
 
 export function settleOmissionTop10(input:OmissionBet[]){
@@ -26,15 +26,18 @@ export function settleOmissionTop10(input:OmissionBet[]){
 }
 
 export function backtestOmissionTop10(rows:Draw[],offsetForDate:(date:string)=>number,scope:OmissionScope='special'){
-  const tracker=createOmissionTracker(scope),bets:OmissionBet[]=[];
+  const tracker=createOmissionTracker(scope),bets:OmissionBet[]=[],rankCounts=Array(49).fill(0) as number[];
   for(let i=0;i<rows.length;i++){
     const row=rows[i],date=row.time.slice(0,10);
     if(i>0&&date>='2026-01-01'){
       const prediction=scoreOmissionStrategy(tracker.snapshot(),date,offsetForDate(date),scope);
       // Persist forecast before reading the outcome for settlement.
       const ranking=prediction.ranking.map(candidate=>candidate.number);
+      const frequencyRanks=rankCounts.map((count,index)=>({rank:index+1,count})).sort((a,b)=>b.count-a.count||a.rank-b.rank).slice(0,10).map(item=>item.rank);
       const numbers=prediction.candidates.map(candidate=>candidate.number),scores=prediction.candidates.map(candidate=>candidate.score);
-      bets.push({issue:row.issue,time:row.time,trainingThroughIssue:prediction.trainingThroughIssue,trainingThroughTime:prediction.trainingThroughTime,numbers,scores,ranking,regularNumbers:row.numbers.slice(0,6),specialNumber:row.numbers[6]});
+      bets.push({issue:row.issue,time:row.time,trainingThroughIssue:prediction.trainingThroughIssue,trainingThroughTime:prediction.trainingThroughTime,numbers,scores,ranking,frequencyRanks,regularNumbers:row.numbers.slice(0,6),specialNumber:row.numbers[6]});
+      const observedNumbers=scope==='all'?row.numbers:[row.numbers[6]];
+      for(const number of observedNumbers){const rank=ranking.indexOf(number);if(rank>=0)rankCounts[rank]++;}
     }
     tracker.observe(row);
   }
@@ -43,26 +46,26 @@ export function backtestOmissionTop10(rows:Draw[],offsetForDate:(date:string)=>n
 export type OmissionBacktest=ReturnType<typeof backtestOmissionTop10>;
 
 export type FrequentRankBetPlan='alternate-fixed'|'miss-streak-step'|'every-period-fixed';
-export function backtestFrequentRankNumbers(input:OmissionBet[],selectedRanks:number[],plan:FrequentRankBetPlan='alternate-fixed'){
- if(!selectedRanks.length||selectedRanks.some(rank=>!Number.isInteger(rank)||rank<1||rank>49))throw new Error('频率名次必须是1至49名');
+export function backtestFrequentRankNumbers(input:OmissionBet[],plan:FrequentRankBetPlan='alternate-fixed'){
  const chronological=[...input].sort((a,b)=>a.time.localeCompare(b.time)||a.issue.localeCompare(b.issue));
- const missStreaks=new Map(selectedRanks.map(rank=>[rank,0]));
- let stakeCents=0,returnCents=0,hits=0,betDraws=0,betCount=0,cumulativeProfitCents=0;
+ let missStreak=0,stakeCents=0,returnCents=0,hits=0,betDraws=0,betCount=0,cumulativeProfitCents=0;
  const rows=chronological.map((row,index)=>{
   if(!row.ranking||row.ranking.length!==49)throw new Error(`${row.issue}期缺少49码完整评分排序`);
+  const selectedRanks=row.frequencyRanks;
+  if(!selectedRanks||selectedRanks.length!==10||new Set(selectedRanks).size!==10||selectedRanks.some(rank=>!Number.isInteger(rank)||rank<1||rank>49))throw new Error(`${row.issue}期缺少动态频率名次`);
+  const signalHit=selectedRanks.some(rank=>row.ranking![rank-1]===row.specialNumber);
+  const stakePerNumber=plan==='every-period-fixed'?OMISSION_TOP10_RULES.stakePerNumber
+   :plan==='alternate-fixed'?(index%2===0?OMISSION_TOP10_RULES.stakePerNumber:0)
+   :index===0||missStreak===0||missStreak>=3?OMISSION_TOP10_RULES.stakePerNumber*Math.max(1,missStreak-2):0;
   const candidates=selectedRanks.map(rank=>{
-   const misses=missStreaks.get(rank)??0;
-   const stakePerRank=plan==='every-period-fixed'?OMISSION_TOP10_RULES.stakePerNumber
-    :plan==='alternate-fixed'?(index%2===0?OMISSION_TOP10_RULES.stakePerNumber:0)
-    :index===0||misses===0||misses>=3?OMISSION_TOP10_RULES.stakePerNumber*Math.max(1,misses-2):0;
-   const number=row.ranking![rank-1],hit=number===row.specialNumber;
-   if(hit)missStreaks.set(rank,0);else missStreaks.set(rank,misses+1);
-   return {rank,number,stakeCents:stakePerRank*100,bought:stakePerRank>0,hit:stakePerRank>0&&hit};
+   const number=row.ranking![rank-1],hit=number===row.specialNumber,bought=stakePerNumber>0;
+   return {rank,number,stakeCents:bought?stakePerNumber*100:0,bought,hit:bought&&hit};
   });
+  missStreak=signalHit?0:missStreak+1;
   const purchased=candidates.filter(candidate=>candidate.bought),hitCandidates=purchased.filter(candidate=>candidate.hit);
   const rowStakeCents=purchased.reduce((sum,candidate)=>sum+candidate.stakeCents,0),rowReturnCents=hitCandidates.reduce((sum,candidate)=>sum+candidate.stakeCents*OMISSION_TOP10_RULES.multiplier,0),rowProfitCents=rowReturnCents-rowStakeCents;
   stakeCents+=rowStakeCents;returnCents+=rowReturnCents;hits+=Number(hitCandidates.length>0);betDraws+=Number(purchased.length>0);betCount+=purchased.length;cumulativeProfitCents+=rowProfitCents;
-  return {...row,candidates,bought:purchased.length>0,hitNumbers:hitCandidates.map(candidate=>candidate.number),hit:hitCandidates.length>0,stakeCents:rowStakeCents,returnCents:rowReturnCents,profitCents:rowProfitCents,cumulativeProfitCents};
+  return {...row,candidates,bought:purchased.length>0,signalHit,hitNumbers:hitCandidates.map(candidate=>candidate.number),hit:hitCandidates.length>0,stakeCents:rowStakeCents,returnCents:rowReturnCents,profitCents:rowProfitCents,cumulativeProfitCents};
  });
  const summary={draws:rows.length,betDraws,betCount,hits,stakeCents,returnCents,profitCents:returnCents-stakeCents,roi:stakeCents?(returnCents-stakeCents)/stakeCents:0,from:rows[0]?.time.slice(0,10)??'',to:rows.at(-1)?.time.slice(0,10)??''};
  return {plan,summary,rows:rows.reverse()};
