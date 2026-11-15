@@ -2,7 +2,6 @@
 import {useMemo,useState} from 'react';
 import {ResponsiveContainer,LineChart,Line,BarChart,Bar,XAxis,YAxis,CartesianGrid,Tooltip,ReferenceLine,Cell} from 'recharts';
 import type {OmissionStatistics} from '@/lib/omissions';
-import type {OmissionBacktest} from '@/lib/omission-backtest';
 const green='#527945',gold='#b8964b',grid='#e8ede2';
 const axis={fontSize:11,fill:'#7c8d72'};
 const tooltipStyle={border:'1px solid #dce7d4',borderRadius:10,fontSize:12};
@@ -22,15 +21,16 @@ export function OmissionCharts({group,timeline,selectedKey,onSelect}:{group:Omis
   </section>
  </div>;
 }
-export function ProfitTrend({rows}:{rows:OmissionBacktest['rows']}){
+export type ProfitTrendRow={issue:string;time:string;hit:boolean;cumulativeProfitCents:number;signalHit?:boolean};
+export function ProfitTrend({rows,title='号码前十累计盈亏曲线'}:{rows:ProfitTrendRow[];title?:string}){
  const [period,setPeriod]=useState(0);
  const full=useMemo(()=>[...rows].reverse().map(r=>({date:r.time.slice(5,10),issue:r.issue,profit:r.cumulativeProfitCents/100})),[rows]);
  const series=period?full.slice(-period):full;
  let peak=0,drawdown=0,worst=0,misses=0,longestMiss=0;
  for(const r of full){peak=Math.max(peak,r.profit);drawdown=Math.max(drawdown,peak-r.profit);worst=Math.min(worst,r.profit);}
- for(const row of [...rows].reverse()){misses=row.hit?0:misses+1;longestMiss=Math.max(longestMiss,misses);}
- return <div className="profit-trend"><div className="chart-section-title"><h3>累计盈亏曲线</h3><span>单位：元</span></div><PeriodButtons value={period} onChange={setPeriod} all/>
-  <div className="stats-chart" role="img" aria-label="号码前十累计盈亏折线图"><ResponsiveContainer width="100%" height="100%"><LineChart data={series} margin={{top:12,right:12,left:0,bottom:2}}><CartesianGrid stroke={grid} vertical={false}/><XAxis dataKey="date" tick={axis} minTickGap={30} tickLine={false} axisLine={false}/><YAxis tick={axis} tickFormatter={v=>Math.abs(v)>=1000?(v/1000)+'千':String(v)} width={50} tickLine={false} axisLine={false}/><ReferenceLine y={0} stroke={gold} strokeDasharray="4 4"/><Tooltip contentStyle={tooltipStyle} labelFormatter={(_,p)=>p[0]?.payload?.issue+'期'} formatter={v=>[`${Number(v).toLocaleString('zh-CN')}元`,'累计盈亏']}/><Line dataKey="profit" stroke={green} strokeWidth={2} dot={false} isAnimationActive={false}/></LineChart></ResponsiveContainer></div>
+ for(const row of [...rows].reverse()){misses=(row.signalHit??row.hit)?0:misses+1;longestMiss=Math.max(longestMiss,misses);}
+ return <div className="profit-trend"><div className="chart-section-title"><h3>{title}</h3><span>单位：元</span></div><PeriodButtons value={period} onChange={setPeriod} all/>
+  <div className="stats-chart" role="img" aria-label={`${title}折线图`}><ResponsiveContainer width="100%" height="100%"><LineChart data={series} margin={{top:12,right:12,left:0,bottom:2}}><CartesianGrid stroke={grid} vertical={false}/><XAxis dataKey="date" tick={axis} minTickGap={30} tickLine={false} axisLine={false}/><YAxis tick={axis} tickFormatter={v=>Math.abs(v)>=1000?(v/1000)+'千':String(v)} width={50} tickLine={false} axisLine={false}/><ReferenceLine y={0} stroke={gold} strokeDasharray="4 4"/><Tooltip contentStyle={tooltipStyle} labelFormatter={(_,p)=>p[0]?.payload?.issue+'期'} formatter={v=>[`${Number(v).toLocaleString('zh-CN')}元`,'累计盈亏']}/><Line dataKey="profit" stroke={green} strokeWidth={2} dot={false} isAnimationActive={false}/></LineChart></ResponsiveContainer></div>
   <div className="stats-mini-grid"><div><span>历史最大回撤</span><strong>{drawdown.toLocaleString('zh-CN')}<small>元</small></strong></div><div><span>累计最低盈亏</span><strong>{worst.toLocaleString('zh-CN')}<small>元</small></strong></div><div><span>最长连续未中</span><strong>{longestMiss}<small>期</small></strong></div><div><span>当前连续未中</span><strong>{misses}<small>期</small></strong></div></div>
  </div>;
 }

@@ -1,6 +1,7 @@
 'use client';
 import {useState} from 'react';
 import {backtestFrequentRankNumbers,type FrequentRankBetPlan,type OmissionBacktest} from '@/lib/omission-backtest';
+import {ProfitTrend} from '@/components/statistics-charts';
 const money=(cents:number)=>new Intl.NumberFormat('zh-CN',{maximumFractionDigits:2}).format(cents/100);
 const signed=(cents:number)=>(cents>0?'+':cents<0?'−':'')+money(Math.abs(cents));
 const tone=(cents:number)=>cents>0?'profit-gain':cents<0?'profit-loss':'profit-even';
@@ -15,6 +16,7 @@ export default function RankFrequencyBacktest({rows}:{rows:OmissionBacktest['row
   <div className="ledger-tabs rank-bet-plans" role="group" aria-label="频率名次跟买方式">{plans.map(([id,label])=><button type="button" key={id} className={plan===id?'active':''} aria-pressed={plan===id} onClick={()=>{setPlan(id);setLimit(10);}}>{label}</button>)}</div>
   <div className="settlement-basis">{rule}<span>每名次基础10元 · 特码47倍含本金 · 连中当期返还后续期按规则继续</span></div>
   <div className="ledger-summary"><div><span>累计盈亏</span><strong className={tone(s.profitCents)}>{signed(s.profitCents)}<small>元</small></strong></div><dl><div><dt>累计投入</dt><dd>{money(s.stakeCents)}元</dd></div><div><dt>累计返还</dt><dd>{money(s.returnCents)}元</dd></div><div><dt>命中期数</dt><dd>{s.hits}/{s.betDraws}个购买期</dd></div><div><dt>下注名次次数</dt><dd>{s.betCount}次</dd></div><div><dt>盈亏率</dt><dd className={tone(s.profitCents)}>{(s.roi*100).toFixed(2)}%</dd></div></dl></div>
+  <ProfitTrend rows={ledger.rows} title="动态评分名次跟买累计盈亏曲线"/>
   <details className="omission-ledger-details"><summary>查看逐期盈利明细<small>共{s.draws}期 · 最新在前</small></summary>
    <div className="omission-ledger-rows">{ledger.rows.slice(0,limit).map(row=><article key={row.issue}>
     <header><div><strong>{row.issue}期</strong><time>{row.time.slice(0,10)}</time></div><span className={row.hit?'omission-ledger-hit':'omission-ledger-miss'}>{row.bought?(row.hit?'本期命中':'本期未中'):row.signalHit?'未买 · 动态号码命中':'本期未购买'}</span></header>
