@@ -14,7 +14,11 @@ for(const scope of ['special','all']){
   assert.deepEqual(row.frequencyRanks,expected);assert(row.trainingThroughTime<row.time);
   for(const number of scope==='all'?[...row.regularNumbers,row.specialNumber]:[row.specialNumber])counts[row.ranking.indexOf(number)]++;
  }
- const prefix=replayLongHistory(source,'2022-06-30 23:59:59').scopes[scope];
+ const prefixReplay=replayLongHistory(source,'2022-06-30 23:59:59');
+ const prefix=prefixReplay.scopes[scope],nextActual=full.scopes[scope][prefix.length];
+ assert.equal(prefixReplay.forecasts[scope].forecastFor,nextActual.time.slice(0,10));
+ assert.deepEqual(prefixReplay.forecasts[scope].candidates.map(c=>c.rank),nextActual.frequencyRanks);
+ assert.deepEqual(prefixReplay.forecasts[scope].candidates.map(c=>c.number),nextActual.frequencyRanks.map(rank=>nextActual.ranking[rank-1]));
  assert.deepEqual(prefix,full.scopes[scope].slice(0,prefix.length));
  const modified=structuredClone(source),target=modified['2023'].find(r=>r.openTime.startsWith('2023-06-01'));
  target.openCode=target.openCode.split(',').reverse().join(',');
@@ -24,13 +28,25 @@ for(const scope of ['special','all']){
  assert.deepEqual(changed[at].ranking,full.scopes[scope][at].ranking);
  for(const plan of ['alternate-fixed','miss-streak-step','every-period-fixed']){
   const ledger=backtestFrequentRankNumbers(full.scopes[scope],plan),chron=[...ledger.rows].reverse();
+  const prefixLedger=backtestFrequentRankNumbers(prefix,plan),afterNext=backtestFrequentRankNumbers([...prefix,nextActual],plan).rows[0];
+  assert.equal(prefixLedger.next.stakeCents,afterNext.stakeCents);
+  assert.equal(prefixLedger.next.bought,afterNext.bought);
+  assert.equal(backtestFrequentRankNumbers(prefix.slice(0,99),plan).next.stakeCents,0);
+  assert.equal(backtestFrequentRankNumbers(prefix.slice(0,100),plan).next.stakeCents,10000);
   assert.equal(chron[0].issue,full.scopes[scope][100].issue);assert.equal(chron[0].stakeCents,10000);
   assert.equal(ledger.summary.profitCents,ledger.rows.reduce((s,r)=>s+r.profitCents,0));
   assert.equal(ledger.summary.stakeCents,ledger.rows.reduce((s,r)=>s+r.stakeCents,0));
   assert.equal(ledger.summary.maxStakeCents,Math.max(...ledger.rows.map(r=>r.stakeCents)));
   assert.equal(ledger.rows.find(r=>r.issue===ledger.summary.maxStakeIssue).stakeCents,ledger.summary.maxStakeCents);
   if(plan==='every-period-fixed')assert(chron.every(r=>r.stakeCents===10000));
-  if(plan==='alternate-fixed')assert(chron.every((r,i)=>r.stakeCents===(i%2===0?10000:0)));
+  if(plan==='alternate-fixed'){
+   let streak=0,skip=false;
+   for(const r of chron){assert.equal(r.stakeCents,skip?0:10000);if(skip){skip=false;streak=0;}else{streak++;skip=r.signalHit||streak===2;}}
+  }
  }
 }
 console.log('PASS: 2021+ history audit, both scopes dynamic frequency, prefix replay, target mutation, warmup, six plan settlements');
+
+const synthetic=Array.from({length:108},(_,i)=>({issue:String(i+1),time:String(i+1).padStart(3,'0'),numbers:[],scores:[],trainingThroughIssue:'',trainingThroughTime:'',ranking:Array.from({length:49},(_,n)=>n+1),frequencyRanks:Array.from({length:10},(_,n)=>n+1),specialNumber:[103,106].includes(i)?1:49}));
+assert.deepEqual(backtestFrequentRankNumbers(synthetic,'alternate-fixed').rows.reverse().map(r=>r.stakeCents),[10000,10000,0,10000,0,10000,10000,0]);
+console.log('PASS: fixed 10 plan buys twice at most, skips after a hit, then restarts');

@@ -43,8 +43,14 @@ export function replayLongHistory(years:YearHistory,cutoff=chinaNow()){
    }
    tracker.observe(row);
   }
-  return bets;
+  const forecastFor=new Date(Date.parse(rows.at(-1)!.time.slice(0,10)+'T12:00:00Z')+86400000).toISOString().slice(0,10);
+  const prediction=scoreOmissionStrategy(tracker.snapshot(),forecastFor,historyOffset(forecastFor),scope);
+  const topRanks=rankCounts.map((count,j)=>({rank:j+1,count})).sort((a,b)=>b.count-a.count||a.rank-b.rank).slice(0,10);
+  const forecast={forecastFor,trainingThroughIssue:prediction.trainingThroughIssue,trainingThroughTime:prediction.trainingThroughTime,
+   candidates:topRanks.map((item,index)=>({frequencyOrder:index+1,rank:item.rank,count:item.count,number:prediction.ranking[item.rank-1].number,zodiac:prediction.ranking[item.rank-1].zodiac}))};
+  return {bets,forecast};
  };
- return {audit,scopes:{special:replay('special'),all:replay('all')},cutoff};
+ const special=replay('special'),all=replay('all');
+ return {audit,scopes:{special:special.bets,all:all.bets},forecasts:{special:special.forecast,all:all.forecast},cutoff};
 }
 export type LongHistoryResult=ReturnType<typeof replayLongHistory>;

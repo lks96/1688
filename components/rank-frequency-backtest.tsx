@@ -9,8 +9,8 @@ const num=(n:number)=>String(n).padStart(2,'0');
 
 export default function RankFrequencyBacktest({rows,initialPlan='alternate-fixed',onPlanChange}:{rows:OmissionBet[];initialPlan?:FrequentRankBetPlan;onPlanChange?:(plan:FrequentRankBetPlan)=>void}){
  const [limit,setLimit]=useState(10),[plan,setPlan]=useState<FrequentRankBetPlan>(initialPlan),ledger=backtestFrequentRankNumbers(rows,plan),s=ledger.summary;
- const plans:[FrequentRankBetPlan,string][]=[['alternate-fixed','隔期固定10'],['miss-streak-step','未中阶梯跟买'],['every-period-fixed','每期固定10']];
- const rule=plan==='alternate-fixed'?'第101个历史期开始，每期按此前频率重新选十个名次，每隔一期买一次；未中也继续。':plan==='every-period-fixed'?'第101个历史期开始，每期按此前频率重新选十个名次并购买对应号码。':'第101个历史期整组每码10元起买，每期按此前频率重选十个名次。任一动态号码命中后，下一期整组每码10元继续；未中累计1—2期先等待，累计3期后的下一期买10元，继续未中每期每码加10元，命中后整体重置。';
+ const plans:[FrequentRankBetPlan,string][]=[['alternate-fixed','连买两期停一期'],['miss-streak-step','未中阶梯跟买'],['every-period-fixed','每期固定10']];
+ const rule=plan==='alternate-fixed'?'第101个历史期起买，每期按此前频率重选十个名次。买中后停1期；未中最多连续买2期（含起买期），随后停1期，再重新起买，每码固定10元。':plan==='every-period-fixed'?'第101个历史期开始，每期按此前频率重新选十个名次并购买对应号码。':'第101个历史期整组每码10元起买，每期按此前频率重选十个名次。任一动态号码命中后，下一期整组每码10元继续；未中累计1—2期先等待，累计3期后的下一期买10元，继续未中每期每码加10元，命中后整体重置。';
  return <section className="rank-frequency-ledger" aria-label="频率前十评分名次盈利回测">
   <div className="chart-section-title"><h3>频率前十名次 · 盈利明细</h3><span>{s.draws}期收益记录</span></div>
   <p className="stats-small-note">前100个历史期只积累排名频率，第101期开始下注、统计盈亏和未中期数。已积累{s.warmupDraws}/100期{s.from?` · 收益统计 ${s.from} 至 ${s.to}`:' · 尚未达到下注起点'}。</p>
