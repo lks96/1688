@@ -358,3 +358,5 @@
 .rank-bet-plans{grid-template-columns:repeat(3,minmax(0,1fr));margin:16px 0 12px}.rank-frequency-ledger .ledger-summary dl{grid-template-columns:repeat(5,minmax(0,1fr))}@media(max-width:760px){.rank-bet-plans button{padding:8px 4px;font-size:11px;min-height:42px}.rank-frequency-ledger .ledger-summary dl{grid-template-columns:repeat(2,minmax(0,1fr))}.omission-ledger-numbers small{font-size:8px}}
 
 .long-history-page>.panel{margin-bottom:22px}.long-history-page .panel-heading{gap:12px;flex-wrap:wrap}@media(max-width:760px){.tabs{grid-template-columns:repeat(5,minmax(0,1fr))}.tabs button{padding-left:2px;padding-right:2px;font-size:10px}.long-history-page .panel-heading .primary{min-height:42px}}
+
+@media(max-width:760px){.tabs{grid-template-columns:repeat(6,minmax(0,1fr))}.tabs button{font-size:10px;gap:3px}}

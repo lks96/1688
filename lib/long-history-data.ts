@@ -25,3 +25,9 @@ export async function getLongHistory(force=false){
   cached={...result,fetchedAt:chinaNow(),warning:errors.join('；')||null};return cached;
  })();
 }
+
+export async function getAnnualHistory(force=false){
+ const state=await getLongHistory(force);
+ const {replayAnnualHistory}=await import('./annual-history');
+ return {...replayAnnualHistory(years,state.cutoff),fetchedAt:state.fetchedAt,warning:state.warning};
+}

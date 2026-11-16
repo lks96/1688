@@ -52,10 +52,11 @@ function frequentRankUnit(plan:FrequentRankBetPlan,index:number,missStreak:numbe
   :plan==='alternate-fixed'?(pause?0:OMISSION_TOP10_RULES.stakePerNumber)
   :index===0||missStreak===0||missStreak>=3?OMISSION_TOP10_RULES.stakePerNumber*Math.max(1,missStreak-2):0;
 }
-export function backtestFrequentRankNumbers(input:OmissionBet[],plan:FrequentRankBetPlan='alternate-fixed'){
+export function backtestFrequentRankNumbers(input:OmissionBet[],plan:FrequentRankBetPlan='alternate-fixed',warmupPeriods=FREQUENT_RANK_WARMUP_PERIODS){
+ if(!Number.isInteger(warmupPeriods)||warmupPeriods<0)throw new Error('数据积累期数无效');
  const chronological=[...input].sort((a,b)=>a.time.localeCompare(b.time)||a.issue.localeCompare(b.issue));
  // Dynamic ranks have already observed these periods; only the betting ledger starts here.
- const bettingPeriods=chronological.slice(FREQUENT_RANK_WARMUP_PERIODS);
+ const bettingPeriods=chronological.slice(warmupPeriods);
  let missStreak=0,stakeCents=0,returnCents=0,hits=0,betDraws=0,betCount=0,cumulativeProfitCents=0,consecutiveBets=0,pause=false;
  const rows=bettingPeriods.map((row,index)=>{
   if(!row.ranking||row.ranking.length!==49)throw new Error(`${row.issue}期缺少49码完整评分排序`);
@@ -78,9 +79,9 @@ export function backtestFrequentRankNumbers(input:OmissionBet[],plan:FrequentRan
   return {...row,candidates,bought:purchased.length>0,signalHit,hitNumbers:hitCandidates.map(candidate=>candidate.number),hit:hitCandidates.length>0,stakeCents:rowStakeCents,returnCents:rowReturnCents,profitCents:rowProfitCents,cumulativeProfitCents};
  });
  const maximumStake=rows.reduce<typeof rows[number]|null>((best,row)=>row.stakeCents>0&&(!best||row.stakeCents>best.stakeCents)?row:best,null);
- const summary={draws:rows.length,warmupDraws:Math.min(chronological.length,FREQUENT_RANK_WARMUP_PERIODS),totalDraws:chronological.length,betDraws,betCount,hits,stakeCents,returnCents,maxStakeCents:maximumStake?.stakeCents??0,maxStakeIssue:maximumStake?.issue??null,maxStakeTime:maximumStake?.time??null,profitCents:returnCents-stakeCents,roi:stakeCents?(returnCents-stakeCents)/stakeCents:0,from:rows[0]?.time.slice(0,10)??'',to:rows.at(-1)?.time.slice(0,10)??''};
- const ready=chronological.length>=FREQUENT_RANK_WARMUP_PERIODS;
+ const summary={draws:rows.length,warmupDraws:Math.min(chronological.length,warmupPeriods),totalDraws:chronological.length,betDraws,betCount,hits,stakeCents,returnCents,maxStakeCents:maximumStake?.stakeCents??0,maxStakeIssue:maximumStake?.issue??null,maxStakeTime:maximumStake?.time??null,profitCents:returnCents-stakeCents,roi:stakeCents?(returnCents-stakeCents)/stakeCents:0,from:rows[0]?.time.slice(0,10)??'',to:rows.at(-1)?.time.slice(0,10)??''};
+ const ready=chronological.length>=warmupPeriods;
  const nextUnit=ready?frequentRankUnit(plan,rows.length,missStreak,pause):0;
- const next={ready,bought:nextUnit>0,stakePerNumberCents:nextUnit*100,stakeCents:nextUnit*100*10,missStreak,warmupRemaining:Math.max(0,FREQUENT_RANK_WARMUP_PERIODS-chronological.length)};
+ const next={ready,bought:nextUnit>0,stakePerNumberCents:nextUnit*100,stakeCents:nextUnit*100*10,missStreak,warmupRemaining:Math.max(0,warmupPeriods-chronological.length)};
  return {plan,summary,next,rows:rows.reverse()};
 }
