@@ -5,12 +5,10 @@ import {replayLongHistory,type YearHistory,type LongHistoryResult} from './long-
 let years:YearHistory=seed as YearHistory,loaded=false,lastAttempt=0;
 type LongHistoryState=LongHistoryResult&{fetchedAt:string;warning:string|null};
 let cached:LongHistoryState|null=null;
-let inflight:Promise<LongHistoryState>|null=null;
 const key='zodiac/long-history-2021-v1.json';
 export async function getLongHistory(force=false){
- if(inflight)return inflight;
  if(cached&&Date.now()-lastAttempt<(force?20000:300000))return cached;
- inflight=(async()=>{
+ return (async()=>{
   if(!loaded){try{const stored=await env.BUCKET?.get(key);if(stored)years=await stored.json<YearHistory>();}catch{}loaded=true;}
   lastAttempt=Date.now();const currentYear=Number(chinaNow().slice(0,4));
   const requested=Array.from({length:currentYear-2020},(_,i)=>2021+i).filter(year=>force||year===currentYear||!years[String(year)]?.length);
@@ -26,5 +24,4 @@ export async function getLongHistory(force=false){
   try{await env.BUCKET?.put(key,JSON.stringify(years),{httpMetadata:{contentType:'application/json'}});}catch{errors.push('本次记录未能持久保存');}
   cached={...result,fetchedAt:chinaNow(),warning:errors.join('；')||null};return cached;
  })();
- try{return await inflight;}finally{inflight=null;}
 }

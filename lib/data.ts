@@ -5,7 +5,6 @@ export type DashboardState={analysis:Analysis;source:'live'|'partial'|'snapshot'
 let rawCache=seed as RawDraw[];
 let cache:DashboardState|null=null;
 let lastAttempt=0;
-let inflight:Promise<DashboardState>|null=null;
 let loaded=false;
 let persisted=false;
 const REFRESH_SECONDS=300;
@@ -25,17 +24,18 @@ async function fetchYear(year:number):Promise<RawDraw[]>{
 }
 async function restore(){
   if(loaded)return;
+  loaded=true;
   if(env.BUCKET){try{const file=await env.BUCKET.get('zodiac/state-v1.json');if(file){const saved=await file.json<{raw:RawDraw[];state:DashboardState}>();const analysis=analyze(saved.raw);rawCache=saved.raw;cache={...saved.state,analysis};persisted=true;}}catch{}}
   loaded=true;
 }
 export async function getDashboard(force=false,scheduled=false):Promise<DashboardState>{
-  await restore();
+  // Populate a usable snapshot before any request-owned I/O can be cancelled.
   initialState();
-  if(inflight)return inflight;
+  await restore();
   const age=Date.now()-lastAttempt;
   if(!scheduled&&lastAttempt&&age<(force?20000:REFRESH_SECONDS*1000))return cache!;
   lastAttempt=Date.now();
-  inflight=(async()=>{
+  return (async()=>{
     const attemptedAt=chinaNow();
     try{
       const year=Number(attemptedAt.slice(0,4));
@@ -54,7 +54,6 @@ export async function getDashboard(force=false,scheduled=false):Promise<Dashboar
     }catch(error){cache={...cache!,attemptedAt,error:error instanceof Error?error.message:'获取失败，显示上次有效记录',source:'snapshot'};}
     return cache!;
   })();
-  try{return await inflight;}finally{inflight=null;}
 }
 export async function readUpdateStatus(){
   const file=await env.BUCKET?.get('zodiac/state-v1.json');
