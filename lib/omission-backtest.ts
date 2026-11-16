@@ -46,10 +46,13 @@ export function backtestOmissionTop10(rows:Draw[],offsetForDate:(date:string)=>n
 export type OmissionBacktest=ReturnType<typeof backtestOmissionTop10>;
 
 export type FrequentRankBetPlan='alternate-fixed'|'miss-streak-step'|'every-period-fixed';
+export const FREQUENT_RANK_WARMUP_PERIODS=100;
 export function backtestFrequentRankNumbers(input:OmissionBet[],plan:FrequentRankBetPlan='alternate-fixed'){
  const chronological=[...input].sort((a,b)=>a.time.localeCompare(b.time)||a.issue.localeCompare(b.issue));
+ // Dynamic ranks have already observed these periods; only the betting ledger starts here.
+ const bettingPeriods=chronological.slice(FREQUENT_RANK_WARMUP_PERIODS);
  let missStreak=0,stakeCents=0,returnCents=0,hits=0,betDraws=0,betCount=0,cumulativeProfitCents=0;
- const rows=chronological.map((row,index)=>{
+ const rows=bettingPeriods.map((row,index)=>{
   if(!row.ranking||row.ranking.length!==49)throw new Error(`${row.issue}期缺少49码完整评分排序`);
   const selectedRanks=row.frequencyRanks;
   if(!selectedRanks||selectedRanks.length!==10||new Set(selectedRanks).size!==10||selectedRanks.some(rank=>!Number.isInteger(rank)||rank<1||rank>49))throw new Error(`${row.issue}期缺少动态频率名次`);
@@ -67,6 +70,6 @@ export function backtestFrequentRankNumbers(input:OmissionBet[],plan:FrequentRan
   stakeCents+=rowStakeCents;returnCents+=rowReturnCents;hits+=Number(hitCandidates.length>0);betDraws+=Number(purchased.length>0);betCount+=purchased.length;cumulativeProfitCents+=rowProfitCents;
   return {...row,candidates,bought:purchased.length>0,signalHit,hitNumbers:hitCandidates.map(candidate=>candidate.number),hit:hitCandidates.length>0,stakeCents:rowStakeCents,returnCents:rowReturnCents,profitCents:rowProfitCents,cumulativeProfitCents};
  });
- const summary={draws:rows.length,betDraws,betCount,hits,stakeCents,returnCents,profitCents:returnCents-stakeCents,roi:stakeCents?(returnCents-stakeCents)/stakeCents:0,from:rows[0]?.time.slice(0,10)??'',to:rows.at(-1)?.time.slice(0,10)??''};
+ const summary={draws:rows.length,warmupDraws:Math.min(chronological.length,FREQUENT_RANK_WARMUP_PERIODS),totalDraws:chronological.length,betDraws,betCount,hits,stakeCents,returnCents,profitCents:returnCents-stakeCents,roi:stakeCents?(returnCents-stakeCents)/stakeCents:0,from:rows[0]?.time.slice(0,10)??'',to:rows.at(-1)?.time.slice(0,10)??''};
  return {plan,summary,rows:rows.reverse()};
 }

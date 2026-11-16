@@ -10,9 +10,10 @@ const num=(n:number)=>String(n).padStart(2,'0');
 export default function RankFrequencyBacktest({rows}:{rows:OmissionBacktest['rows']}){
  const [limit,setLimit]=useState(10),[plan,setPlan]=useState<FrequentRankBetPlan>('alternate-fixed'),ledger=backtestFrequentRankNumbers(rows,plan),s=ledger.summary;
  const plans:[FrequentRankBetPlan,string][]=[['alternate-fixed','隔期固定10'],['miss-streak-step','未中阶梯跟买'],['every-period-fixed','每期固定10']];
- const rule=plan==='alternate-fixed'?'首个可回测期开始，每期按此前频率重新选十个名次，每隔一期买一次；未中也继续。':plan==='every-period-fixed'?'首个可回测期开始，每期按此前频率重新选十个名次并购买对应号码。':'每期按此前频率重新选十个名次；任一动态号码命中后，下一期整组按每名次10元继续。未中累计1—2期先等待，累计3期后的下一期开始买10元，继续未中每期每名次加10元；命中后未中期数整体重置。';
+ const rule=plan==='alternate-fixed'?'第101个历史期开始，每期按此前频率重新选十个名次，每隔一期买一次；未中也继续。':plan==='every-period-fixed'?'第101个历史期开始，每期按此前频率重新选十个名次并购买对应号码。':'第101个历史期整组每码10元起买，每期按此前频率重选十个名次。任一动态号码命中后，下一期整组每码10元继续；未中累计1—2期先等待，累计3期后的下一期买10元，继续未中每期每码加10元，命中后整体重置。';
  return <section className="rank-frequency-ledger" aria-label="频率前十评分名次盈利回测">
-  <div className="chart-section-title"><h3>频率前十名次 · 盈利明细</h3><span>{s.draws}期历史</span></div>
+  <div className="chart-section-title"><h3>频率前十名次 · 盈利明细</h3><span>{s.draws}期收益记录</span></div>
+  <p className="stats-small-note">前100个历史期只积累排名频率，第101期开始下注、统计盈亏和未中期数。已积累{s.warmupDraws}/100期{s.from?` · 收益统计 ${s.from} 至 ${s.to}`:' · 尚未达到下注起点'}。</p>
   <div className="ledger-tabs rank-bet-plans" role="group" aria-label="频率名次跟买方式">{plans.map(([id,label])=><button type="button" key={id} className={plan===id?'active':''} aria-pressed={plan===id} onClick={()=>{setPlan(id);setLimit(10);}}>{label}</button>)}</div>
   <div className="settlement-basis">{rule}<span>每名次基础10元 · 特码47倍含本金 · 连中当期返还后续期按规则继续</span></div>
   <div className="ledger-summary"><div><span>累计盈亏</span><strong className={tone(s.profitCents)}>{signed(s.profitCents)}<small>元</small></strong></div><dl><div><dt>累计投入</dt><dd>{money(s.stakeCents)}元</dd></div><div><dt>累计返还</dt><dd>{money(s.returnCents)}元</dd></div><div><dt>命中期数</dt><dd>{s.hits}/{s.betDraws}个购买期</dd></div><div><dt>下注名次次数</dt><dd>{s.betCount}次</dd></div><div><dt>盈亏率</dt><dd className={tone(s.profitCents)}>{(s.roi*100).toFixed(2)}%</dd></div></dl></div>
