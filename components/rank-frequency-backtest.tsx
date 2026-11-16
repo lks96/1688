@@ -17,6 +17,7 @@ export default function RankFrequencyBacktest({rows,initialPlan='alternate-fixed
   <div className="ledger-tabs rank-bet-plans" role="group" aria-label="频率名次跟买方式">{plans.map(([id,label])=><button type="button" key={id} className={plan===id?'active':''} aria-pressed={plan===id} onClick={()=>{setPlan(id);setLimit(10);onPlanChange?.(id);}}>{label}</button>)}</div>
   <div className="settlement-basis">{rule}<span>每名次基础10元 · 特码47倍含本金 · 连中当期返还后续期按规则继续</span></div>
   <div className="ledger-summary"><div><span>累计盈亏</span><strong className={tone(s.profitCents)}>{signed(s.profitCents)}<small>元</small></strong></div><dl><div><dt>累计投入</dt><dd>{money(s.stakeCents)}元</dd></div><div><dt>累计返还</dt><dd>{money(s.returnCents)}元</dd></div><div><dt>命中期数</dt><dd>{s.hits}/{s.betDraws}个购买期</dd></div><div><dt>下注名次次数</dt><dd>{s.betCount}次</dd></div><div><dt>盈亏率</dt><dd className={tone(s.profitCents)}>{(s.roi*100).toFixed(2)}%</dd></div></dl></div>
+  <div className="rank-current"><span>最高单期总下注 <strong>{money(s.maxStakeCents)}元</strong></span><span>对应期号 <strong>{s.maxStakeIssue?`${s.maxStakeIssue}期 · ${s.maxStakeTime?.slice(0,10)}`:'尚未下注'}</strong></span></div>
   <ProfitTrend rows={ledger.rows} title="动态评分名次跟买累计盈亏曲线"/>
   <details className="omission-ledger-details"><summary>查看逐期盈利明细<small>共{s.draws}期 · 最新在前</small></summary>
    <div className="omission-ledger-rows">{ledger.rows.slice(0,limit).map(row=><article key={row.issue}>

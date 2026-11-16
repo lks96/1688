@@ -27,6 +27,8 @@ for(const scope of ['special','all']){
   assert.equal(chron[0].issue,full.scopes[scope][100].issue);assert.equal(chron[0].stakeCents,10000);
   assert.equal(ledger.summary.profitCents,ledger.rows.reduce((s,r)=>s+r.profitCents,0));
   assert.equal(ledger.summary.stakeCents,ledger.rows.reduce((s,r)=>s+r.stakeCents,0));
+  assert.equal(ledger.summary.maxStakeCents,Math.max(...ledger.rows.map(r=>r.stakeCents)));
+  assert.equal(ledger.rows.find(r=>r.issue===ledger.summary.maxStakeIssue).stakeCents,ledger.summary.maxStakeCents);
   if(plan==='every-period-fixed')assert(chron.every(r=>r.stakeCents===10000));
   if(plan==='alternate-fixed')assert(chron.every((r,i)=>r.stakeCents===(i%2===0?10000:0)));
  }

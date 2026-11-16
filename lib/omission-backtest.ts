@@ -70,6 +70,7 @@ export function backtestFrequentRankNumbers(input:OmissionBet[],plan:FrequentRan
   stakeCents+=rowStakeCents;returnCents+=rowReturnCents;hits+=Number(hitCandidates.length>0);betDraws+=Number(purchased.length>0);betCount+=purchased.length;cumulativeProfitCents+=rowProfitCents;
   return {...row,candidates,bought:purchased.length>0,signalHit,hitNumbers:hitCandidates.map(candidate=>candidate.number),hit:hitCandidates.length>0,stakeCents:rowStakeCents,returnCents:rowReturnCents,profitCents:rowProfitCents,cumulativeProfitCents};
  });
- const summary={draws:rows.length,warmupDraws:Math.min(chronological.length,FREQUENT_RANK_WARMUP_PERIODS),totalDraws:chronological.length,betDraws,betCount,hits,stakeCents,returnCents,profitCents:returnCents-stakeCents,roi:stakeCents?(returnCents-stakeCents)/stakeCents:0,from:rows[0]?.time.slice(0,10)??'',to:rows.at(-1)?.time.slice(0,10)??''};
+ const maximumStake=rows.reduce<typeof rows[number]|null>((best,row)=>row.stakeCents>0&&(!best||row.stakeCents>best.stakeCents)?row:best,null);
+ const summary={draws:rows.length,warmupDraws:Math.min(chronological.length,FREQUENT_RANK_WARMUP_PERIODS),totalDraws:chronological.length,betDraws,betCount,hits,stakeCents,returnCents,maxStakeCents:maximumStake?.stakeCents??0,maxStakeIssue:maximumStake?.issue??null,maxStakeTime:maximumStake?.time??null,profitCents:returnCents-stakeCents,roi:stakeCents?(returnCents-stakeCents)/stakeCents:0,from:rows[0]?.time.slice(0,10)??'',to:rows.at(-1)?.time.slice(0,10)??''};
  return {plan,summary,rows:rows.reverse()};
 }
