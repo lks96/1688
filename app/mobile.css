@@ -362,3 +362,5 @@
 @media(max-width:760px){.tabs{grid-template-columns:repeat(6,minmax(0,1fr))}.tabs button{font-size:10px;gap:3px}}
 
 .rank-step-grid.step-4{grid-template-columns:repeat(4,minmax(0,1fr))}.rank-step-grid.step-6{grid-template-columns:repeat(6,minmax(0,1fr))}.rank-step-grid small{white-space:normal;text-align:center;overflow-wrap:anywhere}@media(max-width:760px){.rank-step-grid.step-6{grid-template-columns:repeat(3,minmax(0,1fr))}}
+
+.intersection-grid small{white-space:normal;text-align:center;overflow-wrap:anywhere}.intersection-source-pools{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:18px 0}.intersection-source-pools>div{border:1px solid var(--line);border-radius:9px;padding:12px}.intersection-source-pools span{font-size:11px;color:var(--muted)}.intersection-source-pools p{font-size:13px;line-height:1.8;margin-top:8px;color:var(--green)}@media(max-width:760px){.tabs{grid-template-columns:repeat(4,minmax(0,1fr));row-gap:0}.tabs button{min-height:43px;padding-top:5px;padding-bottom:5px}.workspace{padding-bottom:110px}.intersection-source-pools{grid-template-columns:1fr}}

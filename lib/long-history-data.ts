@@ -31,3 +31,10 @@ export async function getAnnualHistory(force=false){
  const {replayAnnualHistory}=await import('./annual-history');
  return {...replayAnnualHistory(years,state.cutoff),fetchedAt:state.fetchedAt,warning:state.warning};
 }
+
+export async function getIntersectionHistory(force=false){
+ const state=await getLongHistory(force);
+ const {replayAnnualHistory}=await import('./annual-history');
+ const {buildIntersectionHistory}=await import('./intersection-history');
+ return {...buildIntersectionHistory(state,replayAnnualHistory(years,state.cutoff)),fetchedAt:state.fetchedAt,warning:state.warning};
+}
