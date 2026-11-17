@@ -2,6 +2,7 @@ import type {LongHistoryResult} from './long-history.ts';
 import type {AnnualHistoryResult} from './annual-history.ts';
 import type {OmissionBet} from './omission-backtest.ts';
 import type {OmissionScope} from './omissions.ts';
+import {summarizePresence} from './rank-step.ts';
 export type IntersectionCandidate={number:number;longRank:number;annualRank:number};
 export type IntersectionInput={issue:string;time:string;longNumbers:number[];annualNumbers:number[];candidates:IntersectionCandidate[];specialNumber:number;regularNumbers:number[];trainingThroughIssue:string;trainingThroughTime:string};
 export function intersectTop10(long:OmissionBet,annual:OmissionBet){
@@ -28,6 +29,13 @@ export function settleIntersectionHistory(input:IntersectionInput[]){
  });
  return {summary:{draws:rows.length,betDraws,emptyDraws:rows.length-betDraws,hits,betNumbers,meanIntersection:rows.length?betNumbers/rows.length:0,stakeCents,returnCents,profitCents:returnCents-stakeCents,roi:stakeCents?(returnCents-stakeCents)/stakeCents:0,maxStakeCents,maxStakeIssue,from:rows[0]?.time.slice(0,10)??'',to:rows.at(-1)?.time.slice(0,10)??''},nextUnitCents:unitCents,rows:rows.reverse()};
 }
+export function summarizeIntersectionPresence(rows:Pick<IntersectionInput,'issue'|'time'|'candidates'|'specialNumber'|'regularNumbers'>[],scope:OmissionScope){
+ const chronological=[...rows].sort((a,b)=>a.time.localeCompare(b.time)||a.issue.localeCompare(b.issue));
+ return summarizePresence(chronological.map(row=>{
+  const actual=scope==='all'?[...row.regularNumbers,row.specialNumber]:[row.specialNumber];
+  return row.candidates.some(candidate=>actual.includes(candidate.number));
+ }));
+}
 export function buildIntersectionHistory(long:LongHistoryResult,annual:AnnualHistoryResult){
  const forScope=(scope:OmissionScope)=>{
   const annualRows=new Map<string,{row:OmissionBet;ready:boolean}>();
@@ -46,7 +54,7 @@ export function buildIntersectionHistory(long:LongHistoryResult,annual:AnnualHis
   const ready=long.scopes[scope].length>=100&&!!year&&year.draws>=100&&!!yearly&&yearly.forecastFor===forecast.forecastFor;
   const longNumbers=forecast.candidates.map(c=>c.number),annualNumbers=yearly?.candidates.map(c=>c.number)??[];
   const candidates=ready?forecast.candidates.flatMap(c=>{const a=yearly!.candidates.find(a=>a.number===c.number);return a?[{number:c.number,longRank:c.rank,annualRank:a.rank}]:[];}):[];
-  return {...ledger,forecast:{forecastFor:forecast.forecastFor,trainingThroughIssue:forecast.trainingThroughIssue,trainingThroughTime:forecast.trainingThroughTime,ready,bought:ready&&candidates.length>0,longNumbers,annualNumbers,candidates,stakePerNumberCents:ready&&candidates.length?ledger.nextUnitCents:0,stakeCents:ready?ledger.nextUnitCents*candidates.length:0,warmupRemaining:Math.max(0,100-(year?.draws??0))}};
+  return {...ledger,presence:summarizeIntersectionPresence(ledger.rows,scope),forecast:{forecastFor:forecast.forecastFor,trainingThroughIssue:forecast.trainingThroughIssue,trainingThroughTime:forecast.trainingThroughTime,ready,bought:ready&&candidates.length>0,longNumbers,annualNumbers,candidates,stakePerNumberCents:ready&&candidates.length?ledger.nextUnitCents:0,stakeCents:ready?ledger.nextUnitCents*candidates.length:0,warmupRemaining:Math.max(0,100-(year?.draws??0))}};
  };
  return {audit:long.audit,cutoff:long.cutoff,scopes:{special:forScope('special'),all:forScope('all')}};
 }

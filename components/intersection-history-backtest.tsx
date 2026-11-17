@@ -7,6 +7,7 @@ const amount=(v:number)=>(v/100).toLocaleString('zh-CN',{maximumFractionDigits:2
 const signed=(v:number)=>(v>0?'+':v<0?'−':'')+amount(Math.abs(v));
 const tone=(v:number)=>v>0?'profit-gain':v<0?'profit-loss':'profit-even';
 const num=(n:number)=>String(n).padStart(2,'0');
+const gap=(n:number|null)=>n===null?'—':Number.isInteger(n)?String(n):n.toFixed(1);
 const scopes:[OmissionScope,string][]=[['special','特码评分'],['all','平特码（全部7码）评分']];
 type State=IntersectionHistoryResult&{fetchedAt:string;warning:string|null};
 function Candidates({items,unit,hit}:{items:IntersectionCandidate[];unit:number;hit?:number}){
@@ -17,7 +18,7 @@ export default function IntersectionHistoryBacktest(){
  const load=useCallback(async(force=false)=>{setLoading(true);setError('');try{const response=await fetch('/api/intersection-history'+(force?'?refresh=1':''),{cache:'no-store'});const result=await response.json() as State&{error?:string};if(!response.ok)throw new Error(result.error||'获取失败');setState(result);}catch(e){setError(e instanceof Error?e.message:'获取失败');}finally{setLoading(false);}},[]);
  useEffect(()=>{void load();const timer=setInterval(()=>{if(document.visibilityState==='visible')void load();},300000);return()=>clearInterval(timer);},[load]);
  if(!state)return <section className="panel"><h2>长期 × 逐年独立 · 交集回测</h2><p className="stats-small-note">{error||'正在逐期计算两套前10候选的交集…'}</p>{error&&<button className="primary" onClick={()=>load()}>重新加载</button>}</section>;
- const ledger=state.scopes[scope],s=ledger.summary,f=ledger.forecast;
+ const ledger=state.scopes[scope],s=ledger.summary,f=ledger.forecast,p=ledger.presence;
  const annual=state.audit.years.map(y=>{const rows=ledger.rows.filter(r=>r.time.startsWith(y.year));return {year:y.year,bets:rows.filter(r=>r.bought).length,stake:rows.reduce((n,r)=>n+r.stakeCents,0),profit:rows.reduce((n,r)=>n+r.profitCents,0)};});
  return <div className="long-history-page">
   <section className="panel"><div className="panel-heading"><div><h2>长期 × 逐年独立 · 前10码交集</h2><p>{state.audit.from.slice(0,10)} 至 {state.audit.to.slice(0,10)} · 数据截至{state.audit.to}</p></div><button type="button" className="primary" disabled={loading} onClick={()=>load(true)}>{loading?'同步中…':'同步历年数据'}</button></div>
@@ -36,6 +37,10 @@ export default function IntersectionHistoryBacktest(){
   <section className="panel"><div className="chart-section-title"><h3>两种评分来源的交集收益</h3><span>金额单位：元</span></div><div className="rank-range-table"><table><thead><tr><th>评分来源</th><th>投入</th><th>返还</th><th>净收益</th><th>收益率</th><th>最高单期总下注</th></tr></thead><tbody>{scopes.map(([id,label])=>{const x=state.scopes[id].summary;return <tr key={id}><td><button type="button" className="text-button" onClick={()=>{setScope(id);setLimit(10);}}>{label}</button></td><td>{amount(x.stakeCents)}</td><td>{amount(x.returnCents)}</td><td className={tone(x.profitCents)}>{signed(x.profitCents)}</td><td>{(x.roi*100).toFixed(2)}%</td><td>{amount(x.maxStakeCents)}元<br/>{x.maxStakeIssue?`${x.maxStakeIssue}期`:'—'}</td></tr>;})}</tbody></table></div></section>
   <section className="panel"><div className="panel-heading"><div><h2>交集购买 · 收益与明细</h2><p>{s.from||'尚无收益记录'}{s.to?' 至 '+s.to:''} · 有效比较{s.draws}期</p></div></div>
    <div className="ledger-summary"><div><span>累计盈亏</span><strong className={tone(s.profitCents)}>{signed(s.profitCents)}<small>元</small></strong></div><dl><div><dt>累计投入</dt><dd>{amount(s.stakeCents)}元</dd></div><div><dt>累计返还</dt><dd>{amount(s.returnCents)}元</dd></div><div><dt>购买／命中</dt><dd>{s.betDraws}／{s.hits}期</dd></div><div><dt>无交集跳过</dt><dd>{s.emptyDraws}期</dd></div><div><dt>平均交集</dt><dd>{s.meanIntersection.toFixed(2)}个</dd></div><div><dt>最高单期总下注</dt><dd>{amount(s.maxStakeCents)}元</dd></div></dl></div>
+   <div className="chart-section-title"><h3>交集号码 · 出现统计</h3><span>{p.periods}期有效比较</span></div>
+   <p className="stats-small-note">逐期核对当时的交集号码；{scope==='all'?'平特码按当期7码至少1个落入交集计为出现':'特码按最后一个号码落入交集计为出现'}。交集为空也计未出现。只统计两边已完成热身的有效比较期，年初热身不计入间隔。平均空缺和中位数只取两次出现之间已结束的空缺间隔，连续出现记0期；当前仍未结束的空缺不计入平均值与中位数。</p>
+   <div className="rank-current"><span>当前连续未出现 <strong>{p.currentAbsent}期</strong></span><span>历史最长未出现 <strong>{p.maxAbsent}期</strong></span><span>最多连续出现 <strong>{p.maxPresent}期</strong></span></div>
+   <div className="rank-current"><span>平均空缺期数 <strong>{gap(p.averageGap)}{p.averageGap===null?'':'期'}</strong></span><span>历史中位空缺期数 <strong>{gap(p.medianGap)}{p.medianGap===null?'':'期'}</strong></span><span>完整间隔 <strong>{p.completedIntervals}个</strong></span></div>
    <ProfitTrend key={scope} rows={ledger.rows} title="交集跟买累计盈亏曲线" purchasedOnly/>
    <p className="stats-small-note">连续未中按实际购买次数统计；无交集和热身期不增加连续购买未中次数。</p>
    <details className="omission-ledger-details"><summary>查看逐期盈利明细<small>共{s.draws}期 · 最新在前</small></summary><div className="omission-ledger-rows">{ledger.rows.slice(0,limit).map(row=><article key={row.issue}>

@@ -1,12 +1,17 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import {intersectTop10,settleIntersectionHistory,buildIntersectionHistory} from '../lib/intersection-history.ts';
+import {intersectTop10,settleIntersectionHistory,buildIntersectionHistory,summarizeIntersectionPresence} from '../lib/intersection-history.ts';
 import {replayLongHistory} from '../lib/long-history.ts';
 import {replayAnnualHistory} from '../lib/annual-history.ts';
 const pools=numbers=>({longNumbers:[...numbers,...Array.from({length:10-numbers.length},(_,i)=>10+i)],annualNumbers:[...numbers,...Array.from({length:10-numbers.length},(_,i)=>30+i)]});
 const make=(i,numbers,specialNumber=49)=>({issue:String(i),time:String(i).padStart(3,'0'),trainingThroughTime:'000',trainingThroughIssue:'0',...pools(numbers),candidates:numbers.map(n=>({number:n,longRank:n,annualRank:n+1})),specialNumber,regularNumbers:[]});
 const manual=settleIntersectionHistory([make(1,[1,2]),make(2,[]),make(3,[1,2,3],2),make(4,[4]),make(5,[]),make(6,[5,6])]);
 assert.deepEqual([...manual.rows].reverse().map(r=>[r.stakePerNumberCents,r.stakeCents,r.returnCents,r.nextUnitCents]),[[1000,2000,0,2000],[0,0,0,2000],[2000,6000,94000,1000],[1000,1000,0,2000],[0,0,0,2000],[2000,4000,0,3000]]);
+assert.deepEqual(summarizeIntersectionPresence(manual.rows,'special'),{periods:6,currentAbsent:3,maxAbsent:3,maxPresent:1,averageGap:null,medianGap:null,completedIntervals:0});
+const sample=[make(1,[1],1),make(2,[]),{...make(3,[2]),regularNumbers:[2,20,21,22,23,24]},make(4,[1],1),make(5,[1],1),make(6,[])];
+assert.deepEqual(summarizeIntersectionPresence(sample,'special'),{periods:6,currentAbsent:1,maxAbsent:2,maxPresent:2,averageGap:1,medianGap:1,completedIntervals:2});
+assert.deepEqual(summarizeIntersectionPresence(sample,'all'),{periods:6,currentAbsent:1,maxAbsent:1,maxPresent:3,averageGap:1/3,medianGap:0,completedIntervals:3});
+assert.equal(summarizeIntersectionPresence([],'special').medianGap,null);
 assert.equal(manual.summary.profitCents,81000);assert.equal(manual.summary.maxStakeCents,6000);assert.equal(manual.summary.emptyDraws,2);assert.equal(manual.nextUnitCents,3000);
 assert.throws(()=>settleIntersectionHistory([{...make(1,[1,2]),candidates:[{number:1,longRank:1,annualRank:1}]}]),/交集号码/);
 const base={ranking:Array.from({length:49},(_,i)=>i+1),frequencyRanks:[1,2,3,4,5,6,7,8,9,10]};
@@ -17,6 +22,8 @@ const fullLong=replayLongHistory(seed,cutoff),fullAnnual=replayAnnualHistory(see
 for(const scope of ['special','all']){
  const annualMap=new Map(fullAnnual.years.flatMap(y=>y.scopes[scope].map((r,i)=>[r.issue,{r,i}]))),longMap=new Map(fullLong.scopes[scope].map((r,i)=>[r.issue,{r,i}]));
  const ledger=full.scopes[scope];
+ assert.deepEqual(ledger.presence,summarizeIntersectionPresence(ledger.rows,scope));
+ assert.equal(ledger.presence.periods,ledger.summary.draws);
  for(const row of ledger.rows){
   const a=annualMap.get(row.issue),l=longMap.get(row.issue);assert(a.i>=99&&l.i>=100);
   assert.deepEqual(row.candidates,intersectTop10(l.r,a.r).candidates);
@@ -40,4 +47,4 @@ for(const scope of ['special','all']){
  assert.deepEqual(actual.candidates,original.candidates);assert.equal(actual.stakePerNumberCents,original.stakePerNumberCents);
 }
 console.log('PASS: number-level intersection, variable count, step/reset/no-intersection stake retention, shared warmups, prefix/next forecast consistency, no target leakage, two-scope settlement');
-console.log(JSON.stringify(Object.entries(full.scopes).map(([scope,r])=>({scope,summary:r.summary,next:r.forecast}))));
+console.log(JSON.stringify(Object.entries(full.scopes).map(([scope,r])=>({scope,presence:r.presence}))));
