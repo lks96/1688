@@ -1,6 +1,6 @@
 import {chinaNow,type RawDraw} from './model.ts';
 import {prepareLongHistory,replayLongHistory,type YearHistory,type LongHistoryResult} from './long-history.ts';
-import {backtestFrequentRankNumbers,type FrequentRankBetPlan} from './omission-backtest.ts';
+import {backtestFrequentRankNumbers,type FrequentRankBetPlan,type RankStepCount} from './omission-backtest.ts';
 import type {OmissionScope} from './omissions.ts';
 export const ANNUAL_BET_WARMUP=99; // First draw initializes omissions; the next 99 complete the 100-draw warmup.
 export type AnnualYear={year:string;draws:number;from:string|null;to:string|null;scopes:LongHistoryResult['scopes'];forecasts:LongHistoryResult['forecasts']|null};
@@ -18,11 +18,11 @@ export function replayAnnualHistory(input:YearHistory,cutoff=chinaNow()){
  });
  return {years,audit,activeYear,cutoff};
 }
-export function annualPlanComparison(years:AnnualYear[],scope:OmissionScope,plan:FrequentRankBetPlan){
- const annual=years.map(y=>({year:y.year,historyDraws:y.draws,...backtestFrequentRankNumbers(y.scopes[scope],plan,ANNUAL_BET_WARMUP).summary}));
+export function annualPlanComparison(years:AnnualYear[],scope:OmissionScope,plan:FrequentRankBetPlan,count:RankStepCount=10){
+ const annual=years.map(y=>({year:y.year,historyDraws:y.draws,...backtestFrequentRankNumbers(y.scopes[scope],plan,ANNUAL_BET_WARMUP,count).summary}));
  const stakeCents=annual.reduce((n,y)=>n+y.stakeCents,0),returnCents=annual.reduce((n,y)=>n+y.returnCents,0);
  const max=annual.reduce<typeof annual[number]|null>((best,y)=>y.maxStakeCents>0&&(!best||y.maxStakeCents>best.maxStakeCents)?y:best,null);
- return {scope,plan,annual,stakeCents,returnCents,profitCents:returnCents-stakeCents,roi:stakeCents?(returnCents-stakeCents)/stakeCents:0,
+ return {scope,plan,count,annual,stakeCents,returnCents,profitCents:returnCents-stakeCents,roi:stakeCents?(returnCents-stakeCents)/stakeCents:0,
   betDraws:annual.reduce((n,y)=>n+y.betDraws,0),maxStakeCents:max?.maxStakeCents??0,maxStakeIssue:max?.maxStakeIssue??null};
 }
 export type AnnualHistoryResult=ReturnType<typeof replayAnnualHistory>;

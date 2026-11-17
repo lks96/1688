@@ -47,12 +47,15 @@ export type OmissionBacktest=ReturnType<typeof backtestOmissionTop10>;
 
 export type FrequentRankBetPlan='alternate-fixed'|'miss-streak-step'|'every-period-fixed';
 export const FREQUENT_RANK_WARMUP_PERIODS=100;
-function frequentRankUnit(plan:FrequentRankBetPlan,index:number,missStreak:number,pause=false){
+export const RANK_STEP_MODES=[{count:4,missThreshold:6,label:'前4码'},{count:6,missThreshold:4,label:'前6码'},{count:10,missThreshold:3,label:'前10码'}] as const;
+export type RankStepCount=typeof RANK_STEP_MODES[number]['count'];
+function frequentRankUnit(plan:FrequentRankBetPlan,index:number,missStreak:number,pause=false,missThreshold=3){
  return plan==='every-period-fixed'?OMISSION_TOP10_RULES.stakePerNumber
   :plan==='alternate-fixed'?(pause?0:OMISSION_TOP10_RULES.stakePerNumber)
-  :index===0||missStreak===0||missStreak>=3?OMISSION_TOP10_RULES.stakePerNumber*Math.max(1,missStreak-2):0;
+  :index===0||missStreak===0||missStreak>=missThreshold?OMISSION_TOP10_RULES.stakePerNumber*Math.max(1,missStreak-missThreshold+1):0;
 }
-export function backtestFrequentRankNumbers(input:OmissionBet[],plan:FrequentRankBetPlan='alternate-fixed',warmupPeriods=FREQUENT_RANK_WARMUP_PERIODS){
+export function backtestFrequentRankNumbers(input:OmissionBet[],plan:FrequentRankBetPlan='alternate-fixed',warmupPeriods=FREQUENT_RANK_WARMUP_PERIODS,candidateCount:RankStepCount=10){
+ const mode=RANK_STEP_MODES.find(m=>m.count===candidateCount);if(!mode)throw new Error('号码档位无效');
  if(!Number.isInteger(warmupPeriods)||warmupPeriods<0)throw new Error('数据积累期数无效');
  const chronological=[...input].sort((a,b)=>a.time.localeCompare(b.time)||a.issue.localeCompare(b.issue));
  // Dynamic ranks have already observed these periods; only the betting ledger starts here.
@@ -60,10 +63,11 @@ export function backtestFrequentRankNumbers(input:OmissionBet[],plan:FrequentRan
  let missStreak=0,stakeCents=0,returnCents=0,hits=0,betDraws=0,betCount=0,cumulativeProfitCents=0,consecutiveBets=0,pause=false;
  const rows=bettingPeriods.map((row,index)=>{
   if(!row.ranking||row.ranking.length!==49)throw new Error(`${row.issue}期缺少49码完整评分排序`);
-  const selectedRanks=row.frequencyRanks;
-  if(!selectedRanks||selectedRanks.length!==10||new Set(selectedRanks).size!==10||selectedRanks.some(rank=>!Number.isInteger(rank)||rank<1||rank>49))throw new Error(`${row.issue}期缺少动态频率名次`);
+  const frequencyRanks=row.frequencyRanks;
+  const selectedRanks=frequencyRanks?.slice(0,candidateCount);
+  if(!frequencyRanks||frequencyRanks.length!==10||!selectedRanks||selectedRanks.length!==candidateCount||new Set(selectedRanks).size!==candidateCount||selectedRanks.some(rank=>!Number.isInteger(rank)||rank<1||rank>49))throw new Error(`${row.issue}期缺少动态频率名次`);
   const signalHit=selectedRanks.some(rank=>row.ranking![rank-1]===row.specialNumber);
-  const stakePerNumber=frequentRankUnit(plan,index,missStreak,pause);
+  const stakePerNumber=frequentRankUnit(plan,index,missStreak,pause,mode.missThreshold);
   if(plan==='alternate-fixed'){
    if(stakePerNumber>0){consecutiveBets++;pause=signalHit||consecutiveBets>=2;}
    else{pause=false;consecutiveBets=0;}
@@ -72,16 +76,17 @@ export function backtestFrequentRankNumbers(input:OmissionBet[],plan:FrequentRan
    const number=row.ranking![rank-1],hit=number===row.specialNumber,bought=stakePerNumber>0;
    return {rank,number,stakeCents:bought?stakePerNumber*100:0,bought,hit:bought&&hit};
   });
+  const allSignalHit=candidates.some(candidate=>[...(row.regularNumbers??[]),row.specialNumber].includes(candidate.number));
   missStreak=signalHit?0:missStreak+1;
   const purchased=candidates.filter(candidate=>candidate.bought),hitCandidates=purchased.filter(candidate=>candidate.hit);
   const rowStakeCents=purchased.reduce((sum,candidate)=>sum+candidate.stakeCents,0),rowReturnCents=hitCandidates.reduce((sum,candidate)=>sum+candidate.stakeCents*OMISSION_TOP10_RULES.multiplier,0),rowProfitCents=rowReturnCents-rowStakeCents;
   stakeCents+=rowStakeCents;returnCents+=rowReturnCents;hits+=Number(hitCandidates.length>0);betDraws+=Number(purchased.length>0);betCount+=purchased.length;cumulativeProfitCents+=rowProfitCents;
-  return {...row,candidates,bought:purchased.length>0,signalHit,hitNumbers:hitCandidates.map(candidate=>candidate.number),hit:hitCandidates.length>0,stakeCents:rowStakeCents,returnCents:rowReturnCents,profitCents:rowProfitCents,cumulativeProfitCents};
+  return {...row,candidates,bought:purchased.length>0,signalHit,allSignalHit,hitNumbers:hitCandidates.map(candidate=>candidate.number),hit:hitCandidates.length>0,stakeCents:rowStakeCents,returnCents:rowReturnCents,profitCents:rowProfitCents,cumulativeProfitCents};
  });
  const maximumStake=rows.reduce<typeof rows[number]|null>((best,row)=>row.stakeCents>0&&(!best||row.stakeCents>best.stakeCents)?row:best,null);
  const summary={draws:rows.length,warmupDraws:Math.min(chronological.length,warmupPeriods),totalDraws:chronological.length,betDraws,betCount,hits,stakeCents,returnCents,maxStakeCents:maximumStake?.stakeCents??0,maxStakeIssue:maximumStake?.issue??null,maxStakeTime:maximumStake?.time??null,profitCents:returnCents-stakeCents,roi:stakeCents?(returnCents-stakeCents)/stakeCents:0,from:rows[0]?.time.slice(0,10)??'',to:rows.at(-1)?.time.slice(0,10)??''};
  const ready=chronological.length>=warmupPeriods;
- const nextUnit=ready?frequentRankUnit(plan,rows.length,missStreak,pause):0;
- const next={ready,bought:nextUnit>0,stakePerNumberCents:nextUnit*100,stakeCents:nextUnit*100*10,missStreak,warmupRemaining:Math.max(0,warmupPeriods-chronological.length)};
- return {plan,summary,next,rows:rows.reverse()};
+ const nextUnit=ready?frequentRankUnit(plan,rows.length,missStreak,pause,mode.missThreshold):0;
+ const next={ready,bought:nextUnit>0,stakePerNumberCents:nextUnit*100,stakeCents:nextUnit*100*candidateCount,missStreak,warmupRemaining:Math.max(0,warmupPeriods-chronological.length)};
+ return {plan,candidateCount,missThreshold:mode.missThreshold,summary,next,rows:rows.reverse()};
 }

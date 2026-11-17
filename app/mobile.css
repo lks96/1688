@@ -360,3 +360,5 @@
 .long-history-page>.panel{margin-bottom:22px}.long-history-page .panel-heading{gap:12px;flex-wrap:wrap}@media(max-width:760px){.tabs{grid-template-columns:repeat(5,minmax(0,1fr))}.tabs button{padding-left:2px;padding-right:2px;font-size:10px}.long-history-page .panel-heading .primary{min-height:42px}}
 
 @media(max-width:760px){.tabs{grid-template-columns:repeat(6,minmax(0,1fr))}.tabs button{font-size:10px;gap:3px}}
+
+.rank-step-grid.step-4{grid-template-columns:repeat(4,minmax(0,1fr))}.rank-step-grid.step-6{grid-template-columns:repeat(6,minmax(0,1fr))}.rank-step-grid small{white-space:normal;text-align:center;overflow-wrap:anywhere}@media(max-width:760px){.rank-step-grid.step-6{grid-template-columns:repeat(3,minmax(0,1fr))}}
