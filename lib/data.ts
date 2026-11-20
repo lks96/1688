@@ -12,6 +12,19 @@ export function initialState():DashboardState {
   if(!cache)cache={analysis:analyze(rawCache),source:'snapshot',fetchedAt:null,attemptedAt:null,error:null,refreshSeconds:REFRESH_SECONDS};
   return cache;
 }
+// A completed calendar year is immutable; reuse it only when every day is present.
+// Missing days still trigger a fetch, including leap-day gaps.
+export function hasCompleteYear(raw:RawDraw[],year:number):boolean{
+ const dates=new Set(raw.filter(row=>row.openTime.startsWith(`${year}-`)).map(row=>row.openTime.slice(0,10)));
+ for(let day=Date.UTC(year,0,1);day<Date.UTC(year+1,0,1);day+=86400000){if(!dates.has(new Date(day).toISOString().slice(0,10)))return false;}
+ return true;
+}
+function syncFailure(year:number,reason:unknown):string{
+ const error=reason instanceof Error?reason:null;
+ const detail=error?.name==='TimeoutError'||error?.name==='AbortError'?'请求超时':error?.message.startsWith(`${year}年`)?error.message.slice(5):error instanceof SyntaxError?'接口返回的不是有效JSON':'网络请求失败';
+ console.warn('[dashboard] year sync failed',JSON.stringify({year,reason:detail}));
+ return `${year}年同步失败（${detail}），使用已保存记录`;
+}
 async function fetchYear(year:number):Promise<RawDraw[]>{
   const response=await fetch(`https://history.macaumarksix.com/history/macaujc2/y/${year}`,{headers:{Accept:'application/json','User-Agent':'Mozilla/5.0'},signal:AbortSignal.timeout(12000)});
   if(!response.ok)throw new Error(`${year}年接口返回${response.status}`);
@@ -39,11 +52,11 @@ export async function getDashboard(force=false,scheduled=false):Promise<Dashboar
     const attemptedAt=chinaNow();
     try{
       const year=Number(attemptedAt.slice(0,4));
-      const years=Array.from({length:year-2024},(_,i)=>2025+i);
+      const years=Array.from({length:year-2024},(_,i)=>2025+i).filter(y=>y===year||!hasCompleteYear(rawCache,y));
       const fetched=await Promise.allSettled(years.map(fetchYear));
       const incoming:RawDraw[]=[],errors:string[]=[];
-      fetched.forEach((r,i)=>{if(r.status==='fulfilled')incoming.push(...r.value);else errors.push(`${years[i]}年数据暂时无法获取`);});
-      if(!incoming.length)throw new Error('开奖接口暂时无法连接，当前显示上次有效记录');
+      fetched.forEach((r,i)=>{if(r.status==='fulfilled')incoming.push(...r.value);else errors.push(syncFailure(years[i],r.reason));});
+      if(!incoming.length)throw new Error(errors.join('；')||'开奖接口暂时无法连接，当前显示上次有效记录');
       const combined=[...rawCache,...incoming];
       const analysis=analyze(combined);
       const newRaw=Array.from(new Map(combined.map(r=>[r.expect,r])).values());
